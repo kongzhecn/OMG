@@ -92,10 +92,7 @@ For example:
 python inference_lora.py \
     --prompt "Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed." \
     --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
-    --prompt_rewrite '[Close-up photo of the Harry Potter in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*'
-                                '-[noisy, blurry, soft, deformed, ugly]|'
-                                '[Close-up photo of the Hermione Granger in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*'
-                                '-[noisy, blurry, soft, deformed, ugly]'
+    --prompt_rewrite '[Close-up photo of the Harry Potter in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]|[Close-up photo of the Hermione Granger in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]'
 ```
 ### 2: MMC with InstantID
 
@@ -110,12 +107,7 @@ For example:
 python inference_instantid.py \
     --prompt 'Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed.' \
     --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
-    --prompt_rewrite '[Close-up photo of the a man, 35mm photograph, film, professional, 4k, highly detailed.]-*'
-                                '-[noisy, blurry, soft, deformed, ugly]-*-'
-                                './example/musk_resize.jpeg|'
-                                '[Close-up photo of the a man, 35mm photograph, film, professional, 4k, highly detailed.]-'
-                                '*-[noisy, blurry, soft, deformed, ugly]-*-'
-                                './example/yann-lecun_resize.jpg',
+    --prompt_rewrite '[Close-up photo of the a man, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/musk_resize.jpeg|[Close-up photo of the a man, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/yann-lecun_resize.jpg'
 ```
 
 ### 3. Local gradio demo with MMC + LoRA
