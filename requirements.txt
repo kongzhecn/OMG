@@ -1,0 +1,11 @@
+numpy==1.26.3
+pillow==10.2.0
+torch==2.0.1
+transformers==4.36.2
+diffusers==0.25.0
+torchvision==0.15.2
+einops==0.6.1
+opencv-python==4.7.0.68
+xformers==0.0.21
+gradio==3.36.1
+insightface==0.7.3
