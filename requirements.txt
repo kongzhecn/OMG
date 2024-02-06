@@ -9,3 +9,4 @@ opencv-python==4.7.0.68
 xformers==0.0.21
 gradio==3.36.1
 insightface==0.7.3
+accelerate==0.25.0
