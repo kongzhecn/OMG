@@ -114,3 +114,4 @@ python inference_instantid.py \
 ```
 python gradio_demo/app.py 
 ```
+Connect to the public URL displayed after the startup process is completed.
