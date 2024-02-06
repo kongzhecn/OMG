@@ -332,7 +332,7 @@ def main(device):
             inputs=[prompt, prompt2, prompt3, prompt4, negative_prompt, man, woman, seed],
             outputs=[gallery, gallery2, gallery3, gallery4]
         )
-    demo.launch(server_name='0.0.0.0',server_port=3389, debug=True)
+    demo.launch(server_name='0.0.0.0',server_port=7861, debug=True)
 
 def parse_args():
     parser = argparse.ArgumentParser('', add_help=False)
