@@ -343,8 +343,7 @@ class LoraMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
             region_add_text_embeds_list.append(torch.concat([region_negative_pooled_prompt_embeds, region_pooled_prompt_embeds], dim=0).to(concept_models._execution_device))
 
         if stage==2:
-            mask_list = [mask.float().to(dtype=prompt_embeds.dtype, device=device) for mask in region_masks]
-
+            mask_list = [mask.float().to(dtype=prompt_embeds.dtype, device=device) if mask is not None else None for mask in region_masks]
 
         # 4. Prepare image
         if isinstance(controlnet, ControlNetModel) and image is not None:
@@ -571,28 +570,29 @@ class LoraMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
                     new_noise_pred[:, :, region_mask != 0] = (1 - replace_ratio) * edit_noise[:, :, region_mask != 0]
 
                     for region_prompt_embeds, region_add_text_embeds, region_add_time_ids, concept_mask, region_prompt, lora_param in zip(region_prompt_embeds_list, region_add_text_embeds_list, add_time_ids_list, mask_list, region_prompts, lora_list):
-                        concept_mask = F.interpolate(concept_mask.unsqueeze(0).unsqueeze(0),
-                                                     size=(noise_pred.shape[2], noise_pred.shape[3]),
-                                                     mode='nearest').squeeze().to(dtype=noise_pred.dtype, device=concept_models._execution_device)
+                        if concept_mask is not None:
+                            concept_mask = F.interpolate(concept_mask.unsqueeze(0).unsqueeze(0),
+                                                         size=(noise_pred.shape[2], noise_pred.shape[3]),
+                                                         mode='nearest').squeeze().to(dtype=noise_pred.dtype, device=concept_models._execution_device)
 
 
-                        region_latent_model_input = latent_model_input[3:4].clone().to(concept_models._execution_device)
+                            region_latent_model_input = latent_model_input[3:4].clone().to(concept_models._execution_device)
 
-                        region_latent_model_input = torch.cat([region_latent_model_input] * 2)
-                        region_added_cond_kwargs = {"text_embeds": region_add_text_embeds,
-                                                    "time_ids": region_add_time_ids}
-                        concept_models.set_adapters(lora_param)
-                        region_noise_pred = concept_models.unet(
-                            region_latent_model_input,
-                            t,
-                            encoder_hidden_states=region_prompt_embeds,
-                            cross_attention_kwargs={'scale': 0.8},
-                            added_cond_kwargs=region_added_cond_kwargs,
-                            return_dict=False,
-                        )[0]
+                            region_latent_model_input = torch.cat([region_latent_model_input] * 2)
+                            region_added_cond_kwargs = {"text_embeds": region_add_text_embeds,
+                                                        "time_ids": region_add_time_ids}
+                            concept_models.set_adapters(lora_param)
+                            region_noise_pred = concept_models.unet(
+                                region_latent_model_input,
+                                t,
+                                encoder_hidden_states=region_prompt_embeds,
+                                cross_attention_kwargs={'scale': 0.8},
+                                added_cond_kwargs=region_added_cond_kwargs,
+                                return_dict=False,
+                            )[0]
 
-                        new_noise_pred = new_noise_pred.to(concept_models._execution_device)
-                        new_noise_pred[:, :, concept_mask==1] += replace_ratio * (region_noise_pred[:, :, concept_mask==1] / (concept_mask.reshape(1, 1, *concept_mask.shape)[:, :, concept_mask==1].to(region_noise_pred.device)))
+                            new_noise_pred = new_noise_pred.to(concept_models._execution_device)
+                            new_noise_pred[:, :, concept_mask==1] += replace_ratio * (region_noise_pred[:, :, concept_mask==1] / (concept_mask.reshape(1, 1, *concept_mask.shape)[:, :, concept_mask==1].to(region_noise_pred.device)))
 
 
                     new_noise_pred = new_noise_pred.to(noise_pred.device)
@@ -667,7 +667,8 @@ class LoraMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
     def get_region_mask(self, mask_list, feat_height, feat_width):
         exclusive_mask = torch.zeros((feat_height, feat_width))
         for mask in mask_list:
-            mask = F.interpolate(mask.unsqueeze(0).unsqueeze(0), size=(feat_height, feat_width),
-                                 mode='nearest').squeeze().to(dtype=exclusive_mask.dtype, device=exclusive_mask.device)
-            exclusive_mask = ((mask == 1) | (exclusive_mask == 1)).to(dtype=mask.dtype)
+            if mask is not None:
+                mask = F.interpolate(mask.unsqueeze(0).unsqueeze(0), size=(feat_height, feat_width),
+                                     mode='nearest').squeeze().to(dtype=exclusive_mask.dtype, device=exclusive_mask.device)
+                exclusive_mask = ((mask == 1) | (exclusive_mask == 1)).to(dtype=mask.dtype)
         return exclusive_mask

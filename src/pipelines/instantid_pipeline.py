@@ -374,7 +374,7 @@ class InstantidMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
 
 
         if stage==2:
-            mask_list = [mask.float().to(dtype=prompt_embeds.dtype, device=device) for mask in region_masks]
+            mask_list = [mask.float().to(dtype=prompt_embeds.dtype, device=device) if mask is not None else None for mask in region_masks]
             image_embedding_list = get_face_embedding(face_app, ref_images)
             image_prompt_image_emb_list = []
             for image_embeds in image_embedding_list:
@@ -576,67 +576,64 @@ class InstantidMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
                     new_noise_pred[:, :, region_mask != 0] = (1 - replace_ratio) * edit_noise[:, :, region_mask != 0]
 
                     for region_prompt_embeds, region_add_text_embeds, region_add_time_ids, concept_mask, region_prompt, region_prompt_image_emb in zip(region_prompt_embeds_list, region_add_text_embeds_list, add_time_ids_list, mask_list, region_prompts, image_prompt_image_emb_list):
+                        if concept_mask is not None:
+                            concept_mask = F.interpolate(concept_mask.unsqueeze(0).unsqueeze(0),
+                                                         size=(noise_pred.shape[2], noise_pred.shape[3]),
+                                                         mode='nearest').squeeze().to(dtype=noise_pred.dtype, device=concept_models._execution_device)
 
-                        concept_mask = F.interpolate(concept_mask.unsqueeze(0).unsqueeze(0),
-                                                     size=(noise_pred.shape[2], noise_pred.shape[3]),
-                                                     mode='nearest').squeeze().to(dtype=noise_pred.dtype, device=concept_models._execution_device)
+                            region_latent_model_input = latent_model_input[3:4].clone().to(concept_models._execution_device)
 
-                        region_latent_model_input = latent_model_input[3:4].clone().to(concept_models._execution_device)
+                            region_latent_model_input = torch.cat([region_latent_model_input] * 2)
+                            region_added_cond_kwargs = {"text_embeds": region_add_text_embeds,
+                                                        "time_ids": region_add_time_ids}
 
-                        region_latent_model_input = torch.cat([region_latent_model_input] * 2)
-                        region_added_cond_kwargs = {"text_embeds": region_add_text_embeds,
-                                                    "time_ids": region_add_time_ids}
+                            if image is not None:
+                                down_block_res_samples, mid_block_res_sample = self.controlnet(
+                                    region_latent_model_input,
+                                    t,
+                                    encoder_hidden_states=region_prompt_image_emb,
+                                    controlnet_cond=image,
+                                    conditioning_scale=cond_scale,
+                                    guess_mode=guess_mode,
+                                    added_cond_kwargs=region_added_cond_kwargs,
+                                    return_dict=False,
+                                )
 
-                        if image is not None:
-                            down_block_res_samples, mid_block_res_sample = self.controlnet(
+                                if guess_mode and self.do_classifier_free_guidance:
+                                    # Infered ControlNet only for the conditional batch.
+                                    # To apply the output of ControlNet to both the unconditional and conditional batches,
+                                    # add 0 to the unconditional batch to keep it unchanged.
+                                    down_block_res_samples = [torch.cat([torch.zeros_like(d), d]) for d in
+                                                              down_block_res_samples]
+                                    mid_block_res_sample = torch.cat(
+                                        [torch.zeros_like(mid_block_res_sample), mid_block_res_sample])
+
+                            else:
+                                down_block_res_samples = None
+                                mid_block_res_sample = None
+
+                            region_encoder_hidden_states = torch.cat([region_prompt_embeds, region_prompt_image_emb], dim=1)
+
+                            region_noise_pred = concept_models.unet(
                                 region_latent_model_input,
                                 t,
-                                encoder_hidden_states=region_prompt_image_emb,
-                                controlnet_cond=image,
-                                conditioning_scale=cond_scale,
-                                guess_mode=guess_mode,
+                                encoder_hidden_states=region_encoder_hidden_states,
+                                cross_attention_kwargs=None,
+                                down_block_additional_residuals=down_block_res_samples,
+                                mid_block_additional_residual=mid_block_res_sample,
                                 added_cond_kwargs=region_added_cond_kwargs,
                                 return_dict=False,
-                            )
-
-                            if guess_mode and self.do_classifier_free_guidance:
-                                # Infered ControlNet only for the conditional batch.
-                                # To apply the output of ControlNet to both the unconditional and conditional batches,
-                                # add 0 to the unconditional batch to keep it unchanged.
-                                down_block_res_samples = [torch.cat([torch.zeros_like(d), d]) for d in
-                                                          down_block_res_samples]
-                                mid_block_res_sample = torch.cat(
-                                    [torch.zeros_like(mid_block_res_sample), mid_block_res_sample])
-
-                        else:
-                            down_block_res_samples = None
-                            mid_block_res_sample = None
-
-                        region_encoder_hidden_states = torch.cat([region_prompt_embeds, region_prompt_image_emb], dim=1)
-
-                        region_noise_pred = concept_models.unet(
-                            region_latent_model_input,
-                            t,
-                            encoder_hidden_states=region_encoder_hidden_states,
-                            cross_attention_kwargs=None,
-                            down_block_additional_residuals=down_block_res_samples,
-                            mid_block_additional_residual=mid_block_res_sample,
-                            added_cond_kwargs=region_added_cond_kwargs,
-                            return_dict=False,
-                        )[0]
+                            )[0]
 
 
-                        new_noise_pred = new_noise_pred.to(concept_models._execution_device)
-                        new_noise_pred[:, :, concept_mask==1] += replace_ratio * (region_noise_pred[:, :, concept_mask==1] / (concept_mask.reshape(1, 1, *concept_mask.shape)[:, :, concept_mask==1].to(region_noise_pred.device)))
-                        # print(region_noise_pred.shape)
+                            new_noise_pred = new_noise_pred.to(concept_models._execution_device)
+                            new_noise_pred[:, :, concept_mask==1] += replace_ratio * (region_noise_pred[:, :, concept_mask==1] / (concept_mask.reshape(1, 1, *concept_mask.shape)[:, :, concept_mask==1].to(region_noise_pred.device)))
 
 
                     new_noise_pred = new_noise_pred.to(noise_pred.device)
                     noise_pred[1, :, :, :] = new_noise_pred[0]
                     noise_pred[3, :, :, :] = new_noise_pred[1]
-                    # controller.between_steps()
 
-                    # perform guidance
                 if self.do_classifier_free_guidance:
                     noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
                     noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
@@ -703,9 +700,10 @@ class InstantidMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
     def get_region_mask(self, mask_list, feat_height, feat_width):
         exclusive_mask = torch.zeros((feat_height, feat_width))
         for mask in mask_list:
-            mask = F.interpolate(mask.unsqueeze(0).unsqueeze(0), size=(feat_height, feat_width),
-                                 mode='nearest').squeeze().to(dtype=exclusive_mask.dtype, device=exclusive_mask.device)
-            exclusive_mask = ((mask == 1) | (exclusive_mask == 1)).to(dtype=mask.dtype)
+            if mask is not None:
+                mask = F.interpolate(mask.unsqueeze(0).unsqueeze(0), size=(feat_height, feat_width),
+                                     mode='nearest').squeeze().to(dtype=exclusive_mask.dtype, device=exclusive_mask.device)
+                exclusive_mask = ((mask == 1) | (exclusive_mask == 1)).to(dtype=mask.dtype)
         return exclusive_mask
 
 def get_face_embedding(face_app, ref_images):

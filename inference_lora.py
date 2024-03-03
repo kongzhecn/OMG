@@ -6,13 +6,11 @@ from typing import Tuple, List
 import torch
 import copy
 
-from groundingdino.models import build_model
-from groundingdino.util import box_ops
-from groundingdino.util.slconfig import SLConfig
-from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
-from groundingdino.util.inference import annotate, predict
-from segment_anything import build_sam, SamPredictor
-import groundingdino.datasets.transforms as T
+from inference.models import YOLOWorld
+from src.efficientvit.models.efficientvit.sam import EfficientViTSamPredictor
+from src.efficientvit.sam_model_zoo import create_sam_model
+import supervision as sv
+
 
 from src.pipelines.lora_pipeline import LoraMultiConceptPipeline
 from src.prompt_attention.p2p_attention import AttentionReplace
@@ -52,37 +50,22 @@ def sample_image(pipe,
     return images
 
 def load_image(image_source) -> Tuple[np.array, torch.Tensor]:
-    transform = T.Compose(
-        [
-            T.RandomResize([800], max_size=1333),
-            T.ToTensor(),
-            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
     image = np.asarray(image_source)
-    image_transformed, _ = transform(image_source, None)
-    return image, image_transformed
+    return image
 
-def predict_mask(groundingdino_model, sam_predictor, image, TEXT_PROMPT, BOX_TRESHOLD = 0.3, TEXT_TRESHOLD = 0.25):
-    image_source, image = load_image(image)
-    boxes, logits, phrases = predict(
-        model=groundingdino_model,
-        image=image,
-        caption=TEXT_PROMPT,
-        box_threshold=BOX_TRESHOLD,
-        text_threshold=TEXT_TRESHOLD
-    )
-    sam_predictor.set_image(image_source)
-    H, W, _ = image_source.shape
-    boxes_xyxy = box_ops.box_cxcywh_to_xyxy(boxes) * torch.Tensor([W, H, W, H])
 
-    transformed_boxes = sam_predictor.transform.apply_boxes_torch(boxes_xyxy, image_source.shape[:2]).cuda()
-    masks, _, _ = sam_predictor.predict_torch(
-        point_coords=None,
-        point_labels=None,
-        boxes=transformed_boxes,
-        multimask_output=False,
+def predict_mask(yolo_world, sam, image, TEXT_PROMPT, confidence = 0.2, threshold = 0.5):
+    image_source = load_image(image)
+    yolo_world.set_classes([TEXT_PROMPT])
+    results = yolo_world.infer(image_source, confidence=confidence)
+    detections = sv.Detections.from_inference(results).with_nms(
+        class_agnostic=True, threshold=threshold
     )
+    masks = None
+    if len(detections) != 0:
+        sam.set_image(image_source, image_format="RGB")
+        masks, _, _ = sam.predict(box=detections.xyxy[0], multimask_output=False)
+        masks = torch.from_numpy(masks.squeeze())
     return masks
 
 def prepare_text(prompt, region_prompts):
@@ -108,16 +91,6 @@ def prepare_text(prompt, region_prompts):
         region_collection.append((prompt_region, neg_prompt_region))
     return (prompt, region_collection)
 
-def load_model_hf(repo_id, filename, ckpt_config_filename, device='cpu'):
-    args = SLConfig.fromfile(ckpt_config_filename)
-    model = build_model(args)
-    args.device = device
-
-    checkpoint = torch.load(os.path.join(repo_id, filename), map_location='cpu')
-    log = model.load_state_dict(clean_state_dict(checkpoint['model']), strict=False)
-    print("Model loaded from {} \n => {}".format(filename, log))
-    _ = model.eval()
-    return model
 
 def build_model_sd(pretrained_model, controlnet_path, device, prompts, lora_paths):
     controlnet = ControlNetModel.from_pretrained(controlnet_path, torch_dtype=torch.float16).to(device)
@@ -136,23 +109,20 @@ def build_model_sd(pretrained_model, controlnet_path, device, prompts, lora_path
         pipe_list.append(adapter_name)
     return pipe, controller, pipe_concept, pipe_list
 
-def build_segment_model(ckpt_repo_id, sam_checkpoint):
-    ckpt_filenmae = "groundingdino_swinb_cogcoor.pth"
-    ckpt_config_filename = os.path.join(ckpt_repo_id, "GroundingDINO_SwinB.cfg.py")
-    groundingdino_model = load_model_hf(ckpt_repo_id, ckpt_filenmae, ckpt_config_filename)
-    sam = build_sam(checkpoint=sam_checkpoint)
-    sam.cuda()
-    sam_predictor = SamPredictor(sam)
-    return groundingdino_model, sam_predictor
+def build_segment_model(sam_path, device):
+    yolo_world = YOLOWorld(model_id="yolo_world/l")
+    sam = EfficientViTSamPredictor(
+        create_sam_model(name="xl1", weight_url=sam_path).to(device).eval()
+    )
+    return yolo_world, sam
 
 
 def parse_args():
     parser = argparse.ArgumentParser('', add_help=False)
     parser.add_argument('--pretrained_sdxl_model', default='./checkpoint/stable-diffusion-xl-base-1.0', type=str)
     parser.add_argument('--controlnet_checkpoint', default='./checkpoint/controlnet-openpose-sdxl-1.0', type=str)
-    parser.add_argument('--dino_checkpoint', default='./checkpoint/GroundingDINO', type=str)
-    parser.add_argument('--sam_checkpoint', default='./checkpoint/sam/sam_vit_h_4b8939.pth', type=str)
-    parser.add_argument('--save_dir', default='results/lora/story-telling/scene1', type=str)
+    parser.add_argument('--sam_checkpoint', default='./checkpoint/sam/xl1.pt', type=str)
+    parser.add_argument('--save_dir', default='results/lora', type=str)
     parser.add_argument('--prompt', default='Close-up photo of the cool man and beautiful woman in surprised expressions as they accidentally discover a mysterious island while on vacation by the sea, 35mm photograph, film, professional, 4k, highly detailed.', type=str)
     parser.add_argument('--negative_prompt', default='noisy, blurry, soft, deformed, ugly', type=str)
     parser.add_argument('--prompt_rewrite',
@@ -175,7 +145,7 @@ if __name__ == '__main__':
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     pipe, controller, pipe_concepts, pipe_list = build_model_sd(args.pretrained_sdxl_model, args.controlnet_checkpoint, device, prompts_tmp, args.lora_path)
-    groundingdino_model, sam_predictor = build_segment_model(args.dino_checkpoint, args.sam_checkpoint)
+    yolo_world, sam = build_segment_model(args.sam_checkpoint, device)
 
     width, height = 1024, 1024
     kwargs = {
@@ -200,8 +170,9 @@ if __name__ == '__main__':
 
     controller.reset()
 
-    mask1 = predict_mask(groundingdino_model, sam_predictor, image[0], 'man')[0].squeeze(0)
-    mask2 = predict_mask(groundingdino_model, sam_predictor, image[0], 'woman')[0].squeeze(0)
+    mask1 = predict_mask(yolo_world, sam, image[0], 'man', confidence = 0.2, threshold = 0.5)
+    mask2 = predict_mask(yolo_world, sam, image[0], 'woman', confidence = 0.2, threshold = 0.5)
+
 
     image = sample_image(
         pipe,

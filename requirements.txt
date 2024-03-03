@@ -12,3 +12,6 @@ insightface==0.7.3
 accelerate==0.25.0
 peft==0.8.2
 onnxruntime-gpu==1.16.0
+inference[yolo-world]==0.9.13
+onnxsim==0.4.35
+matplotlib==3.5.0

@@ -11,13 +11,10 @@ from typing import Tuple, List
 import copy
 import argparse
 
-from groundingdino.models import build_model
-from groundingdino.util import box_ops
-from groundingdino.util.slconfig import SLConfig
-from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
-from groundingdino.util.inference import annotate, predict
-from segment_anything import build_sam, SamPredictor
-import groundingdino.datasets.transforms as T
+from inference.models import YOLOWorld
+from src.efficientvit.models.efficientvit.sam import EfficientViTSamPredictor
+from src.efficientvit.sam_model_zoo import create_sam_model
+import supervision as sv
 
 from src.pipelines.lora_pipeline import LoraMultiConceptPipeline
 from src.prompt_attention.p2p_attention import AttentionReplace
@@ -30,11 +27,11 @@ MAX_SEED = np.iinfo(np.int32).max
 
 ### Description
 title = r"""
-<h1 align="center">MMC: Mastering Multiple Concepts in One Frame</h1>
+<h1 align="center">OMG: Occlusion-friendly Personalized Multi-concept Generation In Diffusion Models</h1>
 """
 
 description = r"""
-<b>Official 🤗 Gradio demo</b> for <a href='https://github.com/' target='_blank'><b>MMC: Mastering Multiple Concepts in One Frame</b></a>.<br>
+<b>Official 🤗 Gradio demo</b> for <a href='https://github.com/' target='_blank'><b>OMG: Occlusion-friendly Personalized Multi-concept Generation In Diffusion Models</b></a>.<br>
 
 How to use:<br>
 1. Select two characters.
@@ -50,7 +47,7 @@ article = r"""
 If our work is helpful for your research or applications, please cite us via:
 ```bibtex
 @article{,
-title={MMC: Mastering Multiple Concepts in One Frame},
+title={OMG: Occlusion-friendly Personalized Multi-concept Generation In Diffusion Models},
 author={},
 journal={},
 year={}
@@ -59,7 +56,7 @@ year={}
 """
 
 tips = r"""
-### Usage tips of MMC
+### Usage tips of OMG
 1. Input text prompts to describe a man and a woman
 """
 
@@ -97,37 +94,22 @@ def sample_image(pipe,
     return images
 
 def load_image(image_source) -> Tuple[np.array, torch.Tensor]:
-    transform = T.Compose(
-        [
-            T.RandomResize([800], max_size=1333),
-            T.ToTensor(),
-            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
     image = np.asarray(image_source)
-    image_transformed, _ = transform(image_source, None)
-    return image, image_transformed
+    return image
 
-def predict_mask(groundingdino_model, sam_predictor, image, TEXT_PROMPT, BOX_TRESHOLD = 0.3, TEXT_TRESHOLD = 0.25):
-    image_source, image = load_image(image)
-    boxes, logits, phrases = predict(
-        model=groundingdino_model,
-        image=image,
-        caption=TEXT_PROMPT,
-        box_threshold=BOX_TRESHOLD,
-        text_threshold=TEXT_TRESHOLD
+def predict_mask(yolo_world, sam, image, TEXT_PROMPT, confidence = 0.2, threshold = 0.5):
+    image_source = load_image(image)
+    yolo_world.set_classes([TEXT_PROMPT])
+    results = yolo_world.infer(image_source, confidence=confidence)
+    detections = sv.Detections.from_inference(results).with_nms(
+        class_agnostic=True, threshold=threshold
     )
-    sam_predictor.set_image(image_source)
-    H, W, _ = image_source.shape
-    boxes_xyxy = box_ops.box_cxcywh_to_xyxy(boxes) * torch.Tensor([W, H, W, H])
-
-    transformed_boxes = sam_predictor.transform.apply_boxes_torch(boxes_xyxy, image_source.shape[:2]).cuda()
-    masks, _, _ = sam_predictor.predict_torch(
-        point_coords=None,
-        point_labels=None,
-        boxes=transformed_boxes,
-        multimask_output=False,
-    )
+    masks = None
+    if len(detections) != 0:
+        print(TEXT_PROMPT + " detected")
+        sam.set_image(image_source, image_format="RGB")
+        masks, _, _ = sam.predict(box=detections.xyxy[0], multimask_output=False)
+        masks = torch.from_numpy(masks.squeeze())
     return masks
 
 def prepare_text(prompt, region_prompts):
@@ -153,16 +135,6 @@ def prepare_text(prompt, region_prompts):
         region_collection.append((prompt_region, neg_prompt_region))
     return (prompt, region_collection)
 
-def load_model_hf(repo_id, filename, ckpt_config_filename, device='cpu'):
-    args = SLConfig.fromfile(ckpt_config_filename)
-    model = build_model(args)
-    args.device = device
-
-    checkpoint = torch.load(os.path.join(repo_id, filename), map_location='cpu')
-    log = model.load_state_dict(clean_state_dict(checkpoint['model']), strict=False)
-    print("Model loaded from {} \n => {}".format(filename, log))
-    _ = model.eval()
-    return model
 
 def build_model_sd(pretrained_model, controlnet_path, device, prompts):
     controlnet = ControlNetModel.from_pretrained(controlnet_path, torch_dtype=torch.float16).to(device)
@@ -183,14 +155,12 @@ def build_model_lora(pipe_concept, lora_paths):
         pipe_list.append(adapter_name)
     return pipe_list
 
-def build_segment_model(ckpt_repo_id, sam_checkpoint):
-    ckpt_filenmae = "groundingdino_swinb_cogcoor.pth"
-    ckpt_config_filename = os.path.join(ckpt_repo_id, "GroundingDINO_SwinB.cfg.py")
-    groundingdino_model = load_model_hf(ckpt_repo_id, ckpt_filenmae, ckpt_config_filename)
-    sam = build_sam(checkpoint=sam_checkpoint)
-    sam.cuda()
-    sam_predictor = SamPredictor(sam)
-    return groundingdino_model, sam_predictor
+def build_segment_model(sam_path, device):
+    yolo_world = YOLOWorld(model_id="yolo_world/l")
+    sam = EfficientViTSamPredictor(
+        create_sam_model(name="xl1", weight_url=sam_path).to(device).eval()
+    )
+    return yolo_world, sam
 
 
 
@@ -204,15 +174,11 @@ def randomize_seed_fn(seed: int, randomize_seed: bool) -> int:
 
 def main(device):
     pipe, controller, pipe_concept = build_model_sd(args.pretrained_sdxl_model, args.controlnet_checkpoint, device, prompts_tmp)
-    groundingdino_model, sam_predictor = build_segment_model(args.dino_checkpoint, args.sam_checkpoint)
+    yolo_world, sam = build_segment_model(args.sam_checkpoint, device)
 
-    width, height = 1024, 1024
-    kwargs = {
-        'height': height,
-        'width': width,
-    }
 
-    def generate_image(prompt1, prompt2, prompt3, prompt4, negative_prompt, man, woman, seed):
+
+    def generate_image(prompt1, prompt2, prompt3, prompt4, negative_prompt, man, woman, resolution, local_prompt1, local_prompt2, seed):
         try:
             path1 = lorapath_man[man]
             path2 = lorapath_woman[woman]
@@ -222,12 +188,19 @@ def main(device):
             input_list = [prompt1, prompt2, prompt3, prompt4]
             output_list = []
 
+            width, height = int(resolution.split("*")[0]), int(resolution.split("*")[1])
+
+            kwargs = {
+                'height': height,
+                'width': width,
+            }
+
             for prompt in input_list:
                 if prompt!='':
                     input_prompt = []
                     p = 'Close-up photo of {prompt}, 35mm photograph, film, professional, 4k, highly detailed.'
                     input_prompt.append([p.replace("{prompt}", prompt), p.replace("{prompt}", prompt)])
-                    input_prompt.append([character_man.get(man), character_woman.get(woman)])
+                    input_prompt.append([(local_prompt1, character_man.get(man)[1]), (local_prompt2, character_woman.get(woman)[1])])
 
                     controller.reset()
                     image = sample_image(
@@ -243,8 +216,8 @@ def main(device):
 
                     controller.reset()
 
-                    mask1 = predict_mask(groundingdino_model, sam_predictor, image[0], 'man')[0].squeeze(0)
-                    mask2 = predict_mask(groundingdino_model, sam_predictor, image[0], 'woman')[0].squeeze(0)
+                    mask1 = predict_mask(yolo_world, sam, image[0], 'man', confidence=0.2, threshold=0.5)
+                    mask2 = predict_mask(yolo_world, sam, image[0], 'woman', confidence=0.2, threshold=0.5)
 
                     image = sample_image(
                         pipe,
@@ -275,31 +248,38 @@ def main(device):
             gallery2 = gr.Image(label="Generated Images", height=512, width=512)
             gallery3 = gr.Image(label="Generated Images", height=512, width=512)
             gallery4 = gr.Image(label="Generated Images", height=512, width=512)
-            usage_tips = gr.Markdown(label="Usage tips of MMC", value=tips, visible=False)
+            usage_tips = gr.Markdown(label="Usage tips of OMG", value=tips, visible=False)
 
         # character choose
         with gr.Row():
-            man = gr.Dropdown(label="Character 1 selection", choices=CHARACTER_MAN_NAMES, value="Harry Potter")
-            woman = gr.Dropdown(label="Character 2 selection", choices=CHARACTER_WOMAN_NAMES, value="Hermione Granger")
+            man = gr.Dropdown(label="Character 1 selection", choices=CHARACTER_MAN_NAMES, value="Harry Potter (identifier: Harry Potter)")
+            woman = gr.Dropdown(label="Character 2 selection", choices=CHARACTER_WOMAN_NAMES, value="Hermione Granger (identifier: Hermione Granger)")
+            res = gr.Dropdown(label="Image Resolution", choices=["1024*1024", "1440*728"], value="1024*1024")
 
-
+        with gr.Row():
+            local_prompt1 = gr.Textbox(label="Character1_prompt",
+                                info="Describe the Character 1, this prompt should include the identifier of character 1",
+                                value="Close-up photo of the Harry Potter, 35mm photograph, film, professional, 4k, highly detailed.")
+            local_prompt2 = gr.Textbox(label="Character2_prompt",
+                                       info="Describe the Character 2, this prompt should include the identifier of character2",
+                                       value="Close-up photo of the Hermione Granger, 35mm photograph, film, professional, 4k, highly detailed.")
 
         # prompt
         with gr.Column():
             prompt = gr.Textbox(label="Prompt 1",
-                                info="Give a simple prompt to describe the image content",
+                                info="Give a simple prompt to describe the first image content",
                                 placeholder="Required",
                                 value="the man and woman's surprised expressions as they accidentally discover a mysterious island while on vacation by the sea")
             prompt2 = gr.Textbox(label="Prompt 2",
-                                 info="Give a simple prompt to describe the image content",
+                                 info="Give a simple prompt to describe the second image content",
                                  placeholder="optional",
                                  value="")
             prompt3 = gr.Textbox(label="Prompt 3",
-                                 info="Give a simple prompt to describe the image content",
+                                 info="Give a simple prompt to describe the third image content",
                                  placeholder="optional",
                                  value="")
             prompt4 = gr.Textbox(label="Prompt 4",
-                                 info="Give a simple prompt to describe the image content",
+                                 info="Give a simple prompt to describe the fourth image content",
                                  placeholder="optional",
                                  value="")
 
@@ -329,7 +309,7 @@ def main(device):
             api_name=False,
         ).then(
             fn=generate_image,
-            inputs=[prompt, prompt2, prompt3, prompt4, negative_prompt, man, woman, seed],
+            inputs=[prompt, prompt2, prompt3, prompt4, negative_prompt, man, woman, res, local_prompt1, local_prompt2, seed],
             outputs=[gallery, gallery2, gallery3, gallery4]
         )
     demo.launch(server_name='0.0.0.0',server_port=7861, debug=True)
@@ -338,8 +318,7 @@ def parse_args():
     parser = argparse.ArgumentParser('', add_help=False)
     parser.add_argument('--pretrained_sdxl_model', default='./checkpoint/stable-diffusion-xl-base-1.0', type=str)
     parser.add_argument('--controlnet_checkpoint', default='./checkpoint/controlnet-openpose-sdxl-1.0', type=str)
-    parser.add_argument('--dino_checkpoint', default='./checkpoint/GroundingDINO', type=str)
-    parser.add_argument('--sam_checkpoint', default='./checkpoint/sam/sam_vit_h_4b8939.pth', type=str)
+    parser.add_argument('--sam_checkpoint', default='./checkpoint/sam/xl1.pt', type=str)
     parser.add_argument('--prompt', default='Close-up photo of the cool man and beautiful woman in surprised expressions as they accidentally discover a mysterious island while on vacation by the sea, 35mm photograph, film, professional, 4k, highly detailed.', type=str)
     parser.add_argument('--negative_prompt', default='noisy, blurry, soft, deformed, ugly', type=str)
     parser.add_argument('--seed', default=22, type=int)
