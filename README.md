@@ -1,5 +1,5 @@
 <div align="center">
-<h1>MMC: Mastering Multiple Concepts in One Frame</h1>
+<h1>OMG: Occlusion-friendly Personalized Multi-concept Generation In Diffusion Models</h1>
 </div>
 
 ## :label: TODO 
@@ -11,7 +11,7 @@
 ## :wrench: Dependencies and Installation
 
 
-The code requires `python==3.10.6`, as well as `pytorch==2.0.1` and `torchvision==0.15.2`. Please follow the instructions [here](https://pytorch.org/get-started/locally/) to install both PyTorch and TorchVision dependencies. Installing both PyTorch and TorchVision with CUDA support is strongly recommended.
+1. The code requires `python==3.10.6`, as well as `pytorch==2.0.1` and `torchvision==0.15.2`. Please follow the instructions [here](https://pytorch.org/get-started/locally/) to install both PyTorch and TorchVision dependencies. Installing both PyTorch and TorchVision with CUDA support is strongly recommended.
 
 ```bash
 conda create -n MMC python=3.10.6
@@ -21,44 +21,72 @@ pip install -r requirements.txt
 pip install git+https://github.com/facebookresearch/segment-anything.git
 ```
 
-[//]: # (2.`GroundingDINO` requires manual installation. )
+2. For Visual comprehension, you can choose `YoloWorld + EfficientViT SAM` or `GroundingDINO + SAM`
 
-[//]: # ()
-[//]: # (Run this so the environment variable will be set under current shell.)
+##### 1) (Recommend) YoloWorld + EfficientViT SAM:
 
-[//]: # (```bash)
+```bash
 
-[//]: # (export CUDA_HOME=/path/to/cuda-11.3)
+pip install inference[yolo-world]==0.9.13
+pip install  onnxsim==0.4.35
 
-[//]: # (```)
+```
 
-[//]: # (In this example, `/path/to/cuda-11.3` should be replaced with the path where your CUDA toolkit is installed.)
+##### 2) (Optional) If you can not install `inference[yolo-world]`. You can install `GroundingDINO` for visual comprehension.
 
-[//]: # (```bash)
+`GroundingDINO` requires manual installation. 
 
-[//]: # (git clone https://github.com/IDEA-Research/GroundingDINO.git)
+Run this so the environment variable will be set under current shell.
 
-[//]: # (cd GroundingDINO/)
+```bash
 
-[//]: # (pip install -e .)
+export CUDA_HOME=/path/to/cuda-11.3
 
-[//]: # (```)
+```
 
-[//]: # (More installation details can be found in [GroundingDINO]&#40;https://github.com/IDEA-Research/GroundingDINO#install&#41;)
+In this example, `/path/to/cuda-11.3` should be replaced with the path where your CUDA toolkit is installed.
+
+```bash
+
+git clone https://github.com/IDEA-Research/GroundingDINO.git
+
+cd GroundingDINO/
+
+pip install -e .
+
+```
+
+More installation details can be found in [GroundingDINO](https://github.com/IDEA-Research/GroundingDINO#install)
 
 ## ⏬ Pretrained Model Preparation
 
-Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0), [EfficientViT-SAM-XL1](https://github.com/mit-han-lab/efficientvit/blob/master/applications/sam.md), [lora](https://huggingface.co/Fucius/MMC_Lora), [controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0), [InstantID](https://huggingface.co/InstantX/InstantID/tree/main), [antelopev2](https://drive.google.com/file/d/18wEUfMNohBJ4K3Ly5wpTejPfDzp-8fI8/view?usp=sharing) and put them under `checkpoint` as follow:
+Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0), 
+[lora](https://huggingface.co/Fucius/MMC_Lora), 
+[controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0), 
+[InstantID](https://huggingface.co/InstantX/InstantID/tree/main), 
+[antelopev2](https://drive.google.com/file/d/18wEUfMNohBJ4K3Ly5wpTejPfDzp-8fI8/view?usp=sharing),
+[Civitai-Chris Evans](https://civitai.com/models/253793?modelVersionId=286084),
+[Civitai-Taylor Swift](https://civitai.com/models/164284/taylor-swift?modelVersionId=185041),
+and put them under `checkpoint` as follow:
+
+For `YoloWorld + EfficientViT SAM`:
+[EfficientViT-SAM-XL1](https://github.com/mit-han-lab/efficientvit/blob/master/applications/sam.md).
+
+For `GroundingDINO + SAM`:
+[GroundingDINO](https://huggingface.co/ShilongLiu/GroundingDINO), [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth).
+
 ```angular2html
 MMC
 ├── checkpoint
 │   ├── antelopev2
 │   ├── controlnet-openpose-sdxl-1.0
 │   ├── InstantID
+│   ├── GroundingDINO
 │   ├── lora
 │   │   ├── Harry_Potter.safetensors
 │   │   └── Hermione_Granger.safetensors
 │   ├── sam
+│   │   ├── sam_vit_h_4b8939.pth
 │   │   └── xl1.pt
 │   └── stable-diffusion-xl-base-1.0
 ├── gradio_demo
@@ -68,7 +96,7 @@ MMC
 ```
 Or you can manually set the checkpoint path as follows:
 
-For MMC + LoRA:
+For OMG + LoRA:
 ```
 python inference_lora.py  \
 --pretrained_sdxl_model <path to stable-diffusion-xl-base-1.0> \
@@ -77,7 +105,7 @@ python inference_lora.py  \
 --sam_checkpoint <path to sam> \
 --lora_path <path to loar1|path to lora2>
 ```
-For MMC + InstantID:
+For OMG + InstantID:
 ```
 python inference_instantid.py  \
 --pretrained_model <path to stable-diffusion-xl-base-1.0> \
@@ -90,7 +118,7 @@ python inference_instantid.py  \
 
 ## :computer: Usage
 
-### 1: MMC with LoRA
+### 1: OMG with LoRA
 The &lt;TOK&gt; for `Harry_Potter.safetensors` is `Harry Potter` and for `Hermione_Granger.safetensors` is `Hermione Granger`.
 ```
 python inference_lora.py \
@@ -122,7 +150,12 @@ python inference_instantid.py \
 ```
 
 ### 3. Local gradio demo with MMC + LoRA
+If you choose `YoloWorld + EfficientViT SAM`:
 ```
-python gradio_demo/app.py 
+python gradio_demo/app.py --segment_type yoloworld
+```
+For `GroundingDINO + SAM`:
+```
+python gradio_demo/app.py --segment_type GroundingDINO
 ```
 Connect to the public URL displayed after the startup process is completed.
