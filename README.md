@@ -67,7 +67,7 @@ Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stabl
 [antelopev2](https://drive.google.com/file/d/18wEUfMNohBJ4K3Ly5wpTejPfDzp-8fI8/view?usp=sharing),
 [Civitai-Chris Evans](https://civitai.com/models/253793?modelVersionId=286084),
 [Civitai-Taylor Swift](https://civitai.com/models/164284/taylor-swift?modelVersionId=185041),
-and put them under `checkpoint` as follow:
+
 
 For `YoloWorld + EfficientViT SAM`:
 [EfficientViT-SAM-XL1](https://github.com/mit-han-lab/efficientvit/blob/master/applications/sam.md).
@@ -75,6 +75,7 @@ For `YoloWorld + EfficientViT SAM`:
 For `GroundingDINO + SAM`:
 [GroundingDINO](https://huggingface.co/ShilongLiu/GroundingDINO), [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth).
 
+And put them under `checkpoint` as follow:
 ```angular2html
 MMC
 ├── checkpoint
