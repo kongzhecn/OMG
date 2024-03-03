@@ -54,7 +54,6 @@ MMC
 ├── checkpoint
 │   ├── antelopev2
 │   ├── controlnet-openpose-sdxl-1.0
-│   ├── GroundingDINO
 │   ├── InstantID
 │   ├── lora
 │   │   ├── Harry_Potter.safetensors
