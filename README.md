@@ -23,7 +23,7 @@ pip install git+https://github.com/facebookresearch/segment-anything.git
 
 2. For Visual comprehension, you can choose `YoloWorld + EfficientViT SAM` or `GroundingDINO + SAM`
 
-##### 1) (Recommend) YoloWorld + EfficientViT SAM:
+- 1) (Recommend) YoloWorld + EfficientViT SAM:
 
 ```bash
 
@@ -32,7 +32,7 @@ pip install  onnxsim==0.4.35
 
 ```
 
-##### 2) (Optional) If you can not install `inference[yolo-world]`. You can install `GroundingDINO` for visual comprehension.
+- 2) (Optional) If you can not install `inference[yolo-world]`. You can install `GroundingDINO` for visual comprehension.
 
 `GroundingDINO` requires manual installation. 
 
