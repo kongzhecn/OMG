@@ -11,7 +11,7 @@
 ## :wrench: Dependencies and Installation
 
 
-1.The code requires `python==3.10.6`, as well as `pytorch==2.0.1` and `torchvision==0.15.2`. Please follow the instructions [here](https://pytorch.org/get-started/locally/) to install both PyTorch and TorchVision dependencies. Installing both PyTorch and TorchVision with CUDA support is strongly recommended.
+The code requires `python==3.10.6`, as well as `pytorch==2.0.1` and `torchvision==0.15.2`. Please follow the instructions [here](https://pytorch.org/get-started/locally/) to install both PyTorch and TorchVision dependencies. Installing both PyTorch and TorchVision with CUDA support is strongly recommended.
 
 ```bash
 conda create -n MMC python=3.10.6
@@ -20,23 +20,35 @@ pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2
 pip install -r requirements.txt
 pip install git+https://github.com/facebookresearch/segment-anything.git
 ```
-2.`GroundingDINO` requires manual installation. 
 
-Run this so the environment variable will be set under current shell.
-```bash
-export CUDA_HOME=/path/to/cuda-11.3
-```
-In this example, `/path/to/cuda-11.3` should be replaced with the path where your CUDA toolkit is installed.
-```bash
-git clone https://github.com/IDEA-Research/GroundingDINO.git
-cd GroundingDINO/
-pip install -e .
-```
-More installation details can be found in [GroundingDINO](https://github.com/IDEA-Research/GroundingDINO#install)
+[//]: # (2.`GroundingDINO` requires manual installation. )
+
+[//]: # ()
+[//]: # (Run this so the environment variable will be set under current shell.)
+
+[//]: # (```bash)
+
+[//]: # (export CUDA_HOME=/path/to/cuda-11.3)
+
+[//]: # (```)
+
+[//]: # (In this example, `/path/to/cuda-11.3` should be replaced with the path where your CUDA toolkit is installed.)
+
+[//]: # (```bash)
+
+[//]: # (git clone https://github.com/IDEA-Research/GroundingDINO.git)
+
+[//]: # (cd GroundingDINO/)
+
+[//]: # (pip install -e .)
+
+[//]: # (```)
+
+[//]: # (More installation details can be found in [GroundingDINO]&#40;https://github.com/IDEA-Research/GroundingDINO#install&#41;)
 
 ## ⏬ Pretrained Model Preparation
 
-Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0), [sam](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth), [lora](https://huggingface.co/Fucius/MMC_Lora), [controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0), [GroundingDINO](https://huggingface.co/ShilongLiu/GroundingDINO), [InstantID](https://huggingface.co/InstantX/InstantID/tree/main), [antelopev2](https://drive.google.com/file/d/18wEUfMNohBJ4K3Ly5wpTejPfDzp-8fI8/view?usp=sharing) and put them under `checkpoint` as follow:
+Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0), [EfficientViT-SAM-XL1](https://github.com/mit-han-lab/efficientvit/blob/master/applications/sam.md), [lora](https://huggingface.co/Fucius/MMC_Lora), [controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0), [InstantID](https://huggingface.co/InstantX/InstantID/tree/main), [antelopev2](https://drive.google.com/file/d/18wEUfMNohBJ4K3Ly5wpTejPfDzp-8fI8/view?usp=sharing) and put them under `checkpoint` as follow:
 ```angular2html
 MMC
 ├── checkpoint
