@@ -60,7 +60,7 @@ MMC
 │   │   ├── Harry_Potter.safetensors
 │   │   └── Hermione_Granger.safetensors
 │   ├── sam
-│   │   └── sam_vit_h_4b8939.pth
+│   │   └── xl1.pt
 │   └── stable-diffusion-xl-base-1.0
 ├── gradio_demo
 ├── src
