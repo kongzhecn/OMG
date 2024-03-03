@@ -133,7 +133,7 @@ python inference_lora.py \
     --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
     --prompt_rewrite '[Close-up photo of the Harry Potter in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]|[Close-up photo of the Hermione Granger in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]'
 ```
-### 2: MMC with InstantID
+### 2: OMG with InstantID
 
 ```
 python inference_instantid.py \
@@ -149,7 +149,7 @@ python inference_instantid.py \
     --prompt_rewrite '[Close-up photo of the a man, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/musk_resize.jpeg|[Close-up photo of the a man, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/yann-lecun_resize.jpg'
 ```
 
-### 3. Local gradio demo with MMC + LoRA
+### 3. Local gradio demo with OMG + LoRA
 If you choose `YoloWorld + EfficientViT SAM`:
 ```
 python gradio_demo/app.py --segment_type yoloworld
