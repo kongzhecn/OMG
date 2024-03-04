@@ -190,13 +190,13 @@ def predict_mask(segmentmodel, sam, image, TEXT_PROMPT, segmentType, confidence 
 
     return masks
 
-def build_model_sd(pretrained_model, controlnet_path, face_adapter, device, prompts, antelopev2_path):
+def build_model_sd(pretrained_model, controlnet_path, face_adapter, device, prompts, antelopev2_path, width, height):
     controlnet = ControlNetModel.from_pretrained(controlnet_path, torch_dtype=torch.float16)
     pipe = InstantidMultiConceptPipeline.from_pretrained(
         pretrained_model, controlnet=controlnet, torch_dtype=torch.float16, variant="fp16").to(device)
 
     controller = AttentionReplace(prompts, 50, cross_replace_steps={"default_": 1.},
-                                  self_replace_steps=0.4, tokenizer=pipe.tokenizer, device=device,
+                                  self_replace_steps=0.4, tokenizer=pipe.tokenizer, device=device, width=width, height=height,
                                   dtype=torch.float16)
     revise_regionally_controlnet_forward(pipe.unet, controller)
 
@@ -276,19 +276,20 @@ if __name__ == '__main__':
 
     prompts_tmp = copy.deepcopy(prompts)
 
+    width, height = 1024, 1024
+    kwargs = {
+        'height': height,
+        'width': width,
+    }
+
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    pipe, controller, pipe_concepts, face_app = build_model_sd(args.pretrained_model, args.controlnet_path, args.face_adapter_path, device, prompts_tmp, args.antelopev2_path)
+    pipe, controller, pipe_concepts, face_app = build_model_sd(args.pretrained_model, args.controlnet_path, args.face_adapter_path, device, prompts_tmp, args.antelopev2_path, width//32, height//32)
     if args.segment_type == 'GroundingDINO':
         detect_model, sam = build_dino_segment_model(args.dino_checkpoint, args.sam_checkpoint)
     else:
         detect_model, sam = build_yolo_segment_model(args.efficientViT_checkpoint, device)
 
-    width, height = 1024, 1024
 
-    kwargs = {
-        'height': height,
-        'width': width,
-    }
 
     # prompts = [args.prompt]
     prompts_rewrite = [args.prompt_rewrite]
@@ -309,24 +310,32 @@ if __name__ == '__main__':
 
     controller.reset()
 
-    mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence=0.2, threshold=0.5)
-    mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence=0.2, threshold=0.5)
+    if "man" in args.prompt:
+        mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence=0.2, threshold=0.5)
+    else:
+        mask1 = None
 
-    face_info = face_app.get(cv2.cvtColor(np.array(image[0]), cv2.COLOR_RGB2BGR))
-    face_kps = draw_kps_multi(image[0], [face['kps'] for face in face_info])
+    if "woman" in args.prompt:
+        mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence=0.2, threshold=0.5)
+    else:
+        mask2 = None
 
-    image = sample_image(
-        pipe,
-        input_prompt=input_prompt,
-        concept_models=pipe_concepts,
-        input_neg_prompt=[args.negative_prompt] * len(input_prompt),
-        generator=torch.Generator(device).manual_seed(args.seed),
-        controller=controller,
-        face_app=face_app,
-        image = face_kps,
-        stage=2,
-        region_masks=[mask1, mask2],
-        **kwargs)
+    if mask1 is not None or mask2 is not None:
+        face_info = face_app.get(cv2.cvtColor(np.array(image[0]), cv2.COLOR_RGB2BGR))
+        face_kps = draw_kps_multi(image[0], [face['kps'] for face in face_info])
+
+        image = sample_image(
+            pipe,
+            input_prompt=input_prompt,
+            concept_models=pipe_concepts,
+            input_neg_prompt=[args.negative_prompt] * len(input_prompt),
+            generator=torch.Generator(device).manual_seed(args.seed),
+            controller=controller,
+            face_app=face_app,
+            image = face_kps,
+            stage=2,
+            region_masks=[mask1, mask2],
+            **kwargs)
 
 
     configs = [

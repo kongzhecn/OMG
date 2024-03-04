@@ -189,7 +189,7 @@ def build_model_sd(pretrained_model, controlnet_path, device, prompts):
     controlnet = ControlNetModel.from_pretrained(controlnet_path, torch_dtype=torch.float16).to(device)
     pipe = LoraMultiConceptPipeline.from_pretrained(
         pretrained_model, controlnet=controlnet, torch_dtype=torch.float16, variant="fp16").to(device)
-    controller = AttentionReplace(prompts, 50, cross_replace_steps={"default_": 1.}, self_replace_steps=0.4, tokenizer=pipe.tokenizer, device=device, dtype=torch.float16)
+    controller = AttentionReplace(prompts, 50, cross_replace_steps={"default_": 1.}, self_replace_steps=0.4, tokenizer=pipe.tokenizer, device=device, dtype=torch.float16, width=1024//32, height=1024//32)
     revise_regionally_controlnet_forward(pipe.unet, controller)
     pipe_concept = StableDiffusionXLPipeline.from_pretrained(pretrained_model, torch_dtype=torch.float16,
                                                              variant="fp16").to(device)
@@ -250,7 +250,15 @@ def main(device, segment_type):
     else:
         detect_model, sam = build_yolo_segment_model(args.efficientViT_checkpoint, device)
 
-
+    resolution_list = ["1440*728",
+                       "1344*768",
+                       "1216*832",
+                       "1152*896",
+                       "1024*1024",
+                       "896*1152",
+                       "832*1216",
+                       "768*1344",
+                       "728*1440"]
 
     def generate_image(prompt1, prompt2, prompt3, prompt4, negative_prompt, man, woman, resolution, local_prompt1, local_prompt2, seed):
         try:
@@ -289,30 +297,46 @@ def main(device, segment_type):
                         **kwargs)
 
                     controller.reset()
+                    if "man" in prompt:
+                        mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence=0.2,
+                                             threshold=0.5)
+                    else:
+                        mask1 = None
 
-                    mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence=0.2,
-                                         threshold=0.5)
-                    mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence=0.2,
-                                         threshold=0.5)
+                    if "woman" in prompt:
+                        mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence=0.2,
+                                             threshold=0.5)
+                    else:
+                        mask2 = None
 
-                    image = sample_image(
-                        pipe,
-                        input_prompt=input_prompt,
-                        concept_models=pipe_concept,
-                        input_neg_prompt=[negative_prompt] * len(input_prompt),
-                        generator=torch.Generator(device).manual_seed(seed),
-                        controller=controller,
-                        stage=2,
-                        region_masks=[mask1, mask2],
-                        lora_list=pipe_list,
-                        **kwargs)
-                    output_list.append(image[1])
+                    if mask1 is None and mask2 is None:
+                        output_list.append(image[1])
+                    else:
+                        image = sample_image(
+                            pipe,
+                            input_prompt=input_prompt,
+                            concept_models=pipe_concept,
+                            input_neg_prompt=[negative_prompt] * len(input_prompt),
+                            generator=torch.Generator(device).manual_seed(seed),
+                            controller=controller,
+                            stage=2,
+                            region_masks=[mask1, mask2],
+                            lora_list=pipe_list,
+                            **kwargs)
+                        output_list.append(image[1])
                 else:
                     output_list.append(None)
             return output_list
         except:
             print("error")
             return None, None, None, None
+
+    def get_local_value_man(input):
+        return character_man[input][0]
+
+    def get_local_value_woman(input):
+        return character_woman[input][0]
+
 
     with gr.Blocks(css=css) as demo:
         # description
@@ -330,7 +354,7 @@ def main(device, segment_type):
         with gr.Row():
             man = gr.Dropdown(label="Character 1 selection", choices=CHARACTER_MAN_NAMES, value="Harry Potter (identifier: Harry Potter)")
             woman = gr.Dropdown(label="Character 2 selection", choices=CHARACTER_WOMAN_NAMES, value="Hermione Granger (identifier: Hermione Granger)")
-            res = gr.Dropdown(label="Image Resolution", choices=["1024*1024", "1440*728"], value="1024*1024")
+            resolution = gr.Dropdown(label="Image Resolution (width*height)", choices=resolution_list, value="1024*1024")
 
         with gr.Row():
             local_prompt1 = gr.Textbox(label="Character1_prompt",
@@ -339,6 +363,9 @@ def main(device, segment_type):
             local_prompt2 = gr.Textbox(label="Character2_prompt",
                                        info="Describe the Character 2, this prompt should include the identifier of character2",
                                        value="Close-up photo of the Hermione Granger, 35mm photograph, film, professional, 4k, highly detailed.")
+
+        man.change(get_local_value_man, man, local_prompt1)
+        woman.change(get_local_value_woman, woman, local_prompt2)
 
         # prompt
         with gr.Column():
@@ -385,7 +412,7 @@ def main(device, segment_type):
             api_name=False,
         ).then(
             fn=generate_image,
-            inputs=[prompt, prompt2, prompt3, prompt4, negative_prompt, man, woman, res, local_prompt1, local_prompt2, seed],
+            inputs=[prompt, prompt2, prompt3, prompt4, negative_prompt, man, woman, resolution, local_prompt1, local_prompt2, seed],
             outputs=[gallery, gallery2, gallery3, gallery4]
         )
     demo.launch(server_name='0.0.0.0',server_port=7861, debug=True)

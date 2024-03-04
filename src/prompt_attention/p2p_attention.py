@@ -6,7 +6,7 @@ import abc
 import src.prompt_attention.p2p_utils as p2p_utils
 import src.prompt_attention.seq_aligner as seq_aligner
 
-att_size = 64
+
 
 class AttentionControl(abc.ABC):
 
@@ -43,11 +43,13 @@ class AttentionControl(abc.ABC):
         self.cur_step = 0
         self.cur_att_layer = 0
 
-    def __init__(self, low_resource=False):
+    def __init__(self, low_resource=False, width=None, height=None):
         self.cur_step = 0
         self.num_att_layers = -1
         self.cur_att_layer = 0
         self.low_resource = low_resource
+        self.width = width
+        self.height = height
 
 class AttentionStore(AttentionControl):
 
@@ -58,8 +60,7 @@ class AttentionStore(AttentionControl):
 
     def forward(self, attn, is_cross: bool, place_in_unet: str):
         key = f"{place_in_unet}_{'cross' if is_cross else 'self'}"
-        if attn.shape[1] <= att_size * 64:
-            pass
+        # if attn.shape[1] <= att_size * 64:
         return attn
 
     def between_steps(self):
@@ -84,8 +85,8 @@ class AttentionStore(AttentionControl):
         self.step_store = self.get_empty_store()
         self.attention_store = {}
 
-    def __init__(self, low_resolution=False, save_global_store=False):
-        super(AttentionStore, self).__init__(low_resolution)
+    def __init__(self, width, height, low_resolution=False, save_global_store=False):
+        super(AttentionStore, self).__init__(low_resolution, width, height)
         self.step_store = self.get_empty_store()
         self.attention_store = {}
         self.save_global_store = save_global_store
@@ -94,8 +95,8 @@ class AttentionControlEdit(AttentionStore, abc.ABC):
     def __init__(self, prompts, num_steps: int,
                  cross_replace_steps: Union[float, Tuple[float, float], Dict[str, Tuple[float, float]]],
                  self_replace_steps: Union[float, Tuple[float, float]],
-                 local_blend=None, tokenizer=None, device=None):
-        super(AttentionControlEdit, self).__init__()
+                 local_blend=None, width=None, height=None, tokenizer=None, device=None):
+        super(AttentionControlEdit, self).__init__(width, height)
         self.batch_size = len(prompts)
         self.cross_replace_alpha = p2p_utils.get_time_words_attention_alpha(prompts, num_steps, cross_replace_steps,
                                                                             tokenizer).to(device)
@@ -111,7 +112,7 @@ class AttentionControlEdit(AttentionStore, abc.ABC):
         return x_t
 
     def replace_self_attention(self, attn_base, att_replace):
-        if att_replace.shape[2] <= att_size * 64:
+        if att_replace.shape[2] <= self.width * self.height:
             return attn_base.unsqueeze(0).expand(att_replace.shape[0], *attn_base.shape)
         else:
             return att_replace
@@ -137,9 +138,9 @@ class AttentionControlEdit(AttentionStore, abc.ABC):
         return attn
 
 class AttentionReplace(AttentionControlEdit):
-    def __init__(self, prompts, num_steps: int, cross_replace_steps: float, self_replace_steps: float,
+    def __init__(self, prompts, num_steps: int, cross_replace_steps: float, self_replace_steps: float, width, height,
                  local_blend = None, tokenizer=None, device=None, dtype=None):
-        super(AttentionReplace, self).__init__(prompts, num_steps, cross_replace_steps, self_replace_steps, local_blend, tokenizer=tokenizer, device=device)
+        super(AttentionReplace, self).__init__(prompts, num_steps, cross_replace_steps, self_replace_steps, local_blend, width, height, tokenizer=tokenizer, device=device)
         self.mapper = seq_aligner.get_replacement_mapper(prompts, tokenizer).to(dtype=dtype, device=device)
 
     def replace_cross_attention(self, attn_base, att_replace):

@@ -139,11 +139,11 @@ def prepare_text(prompt, region_prompts):
     return (prompt, region_collection)
 
 
-def build_model_sd(pretrained_model, controlnet_path, device, prompts, lora_paths):
+def build_model_sd(pretrained_model, controlnet_path, device, prompts, lora_paths, width, height):
     controlnet = ControlNetModel.from_pretrained(controlnet_path, torch_dtype=torch.float16).to(device)
     pipe = LoraMultiConceptPipeline.from_pretrained(
         pretrained_model, controlnet=controlnet, torch_dtype=torch.float16, variant="fp16").to(device)
-    controller = AttentionReplace(prompts, 50, cross_replace_steps={"default_": 1.}, self_replace_steps=0.4, tokenizer=pipe.tokenizer, device=device, dtype=torch.float16)
+    controller = AttentionReplace(prompts, 50, cross_replace_steps={"default_": 1.}, self_replace_steps=0.4, tokenizer=pipe.tokenizer, device=device, dtype=torch.float16, width=width, height=height)
     revise_regionally_controlnet_forward(pipe.unet, controller)
 
     pipe_concept = StableDiffusionXLPipeline.from_pretrained(pretrained_model, torch_dtype=torch.float16, variant="fp16").to(device)
@@ -214,17 +214,19 @@ if __name__ == '__main__':
     prompts_tmp = copy.deepcopy(prompts)
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-    pipe, controller, pipe_concepts, pipe_list = build_model_sd(args.pretrained_sdxl_model, args.controlnet_checkpoint, device, prompts_tmp, args.lora_path)
-    if args.segment_type == 'GroundingDINO':
-        detect_model, sam = build_dino_segment_model(args.dino_checkpoint, args.sam_checkpoint)
-    else:
-        detect_model, sam = build_yolo_segment_model(args.efficientViT_checkpoint, device)
-
     width, height = 1024, 1024
     kwargs = {
         'height': height,
         'width': width,
     }
+
+    pipe, controller, pipe_concepts, pipe_list = build_model_sd(args.pretrained_sdxl_model, args.controlnet_checkpoint, device, prompts_tmp, args.lora_path, width//32, height//32)
+    if args.segment_type == 'GroundingDINO':
+        detect_model, sam = build_dino_segment_model(args.dino_checkpoint, args.sam_checkpoint)
+    else:
+        detect_model, sam = build_yolo_segment_model(args.efficientViT_checkpoint, device)
+
+
 
     prompts_rewrite = [args.prompt_rewrite]
     input_prompt = [prepare_text(p, p_w) for p, p_w in zip(prompts, prompts_rewrite)]
@@ -243,21 +245,27 @@ if __name__ == '__main__':
 
     controller.reset()
 
-    mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence = 0.2, threshold = 0.5)
-    mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence = 0.2, threshold = 0.5)
+    if "man" in args.prompt:
+        mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence = 0.2, threshold = 0.5)
+    else:
+        mask1 = None
+    if "woman" in args.prompt:
+        mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence = 0.2, threshold = 0.5)
+    else:
+        mask2 = None
 
-
-    image = sample_image(
-        pipe,
-        input_prompt=input_prompt,
-        concept_models=pipe_concepts,
-        input_neg_prompt=[args.negative_prompt] * len(input_prompt),
-        generator=torch.Generator(device).manual_seed(args.seed),
-        controller=controller,
-        stage=2,
-        region_masks=[mask1, mask2],
-        lora_list=pipe_list,
-        **kwargs)
+    if mask1 is not None or mask2 is not None:
+        image = sample_image(
+            pipe,
+            input_prompt=input_prompt,
+            concept_models=pipe_concepts,
+            input_neg_prompt=[args.negative_prompt] * len(input_prompt),
+            generator=torch.Generator(device).manual_seed(args.seed),
+            controller=controller,
+            stage=2,
+            region_masks=[mask1, mask2],
+            lora_list=pipe_list,
+            **kwargs)
 
 
 
