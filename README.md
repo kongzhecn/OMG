@@ -14,8 +14,8 @@
 1. The code requires `python==3.10.6`, as well as `pytorch==2.0.1` and `torchvision==0.15.2`. Please follow the instructions [here](https://pytorch.org/get-started/locally/) to install both PyTorch and TorchVision dependencies. Installing both PyTorch and TorchVision with CUDA support is strongly recommended.
 
 ```bash
-conda create -n MMC python=3.10.6
-conda activate MMC
+conda create -n OMG python=3.10.6
+conda activate OMG
 pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2
 pip install -r requirements.txt
 pip install git+https://github.com/facebookresearch/segment-anything.git
@@ -61,7 +61,7 @@ More installation details can be found in [GroundingDINO](https://github.com/IDE
 ## ⏬ Pretrained Model Preparation
 
 Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0), 
-[lora](https://huggingface.co/Fucius/MMC_Lora), 
+[lora](https://huggingface.co/Fucius/OMG), 
 [controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0), 
 [InstantID](https://huggingface.co/InstantX/InstantID/tree/main), 
 [antelopev2](https://drive.google.com/file/d/18wEUfMNohBJ4K3Ly5wpTejPfDzp-8fI8/view?usp=sharing),
@@ -77,7 +77,7 @@ For `GroundingDINO + SAM`:
 
 And put them under `checkpoint` as follow:
 ```angular2html
-MMC
+OMG
 ├── checkpoint
 │   ├── antelopev2
 │   ├── controlnet-openpose-sdxl-1.0
@@ -95,6 +95,9 @@ MMC
 ├── inference_instantid.py
 └── inference_lora.py
 ```
+
+If you use `YoloWorld`, put `yolo-world.pt` (download from [lora](https://huggingface.co/Fucius/OMG)) to `/tmp/cache/yolo_world/l/yolo-world.pt`
+
 Or you can manually set the checkpoint path as follows:
 
 For OMG + LoRA:
