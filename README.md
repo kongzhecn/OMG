@@ -96,7 +96,7 @@ OMG
 └── inference_lora.py
 ```
 
-If you use `YoloWorld`, put `yolo-world.pt` (download from [lora](https://huggingface.co/Fucius/OMG)) to `/tmp/cache/yolo_world/l/yolo-world.pt`
+If you use `YoloWorld`, put `yolo-world.pt` (download from [lora](https://huggingface.co/Fucius/OMG)) to `/tmp/cache/yolo_world/l/yolo-world.pt`. And put `ViT-B-32.pt` (download from [openai]( https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt )) to `~/.cache/clip/ViT-B-32.pt`
 
 Or you can manually set the checkpoint path as follows:
 
