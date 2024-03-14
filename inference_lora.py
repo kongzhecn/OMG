@@ -5,6 +5,7 @@ import os.path
 from typing import Tuple, List
 import torch
 import copy
+from PIL import Image
 
 try:
     from inference.models import YOLOWorld
@@ -47,6 +48,12 @@ def sample_image(pipe,
     styleL=None,
     **extra_kargs
 ):
+    spatial_condition = extra_kargs.pop('spatial_condition')
+    if spatial_condition is not None:
+        spatial_condition_input = [spatial_condition] * len(input_prompt)
+    else:
+        spatial_condition_input = None
+
     images = pipe(
         prompt=input_prompt,
         concept_models=concept_models,
@@ -60,6 +67,7 @@ def sample_image(pipe,
         region_masks=region_masks,
         lora_list=lora_list,
         styleL=styleL,
+        image=spatial_condition_input,
         **extra_kargs).images
 
     return images
@@ -194,6 +202,7 @@ def parse_args():
     parser = argparse.ArgumentParser('', add_help=False)
     parser.add_argument('--pretrained_sdxl_model', default='./checkpoint/stable-diffusion-xl-base-1.0', type=str)
     parser.add_argument('--controlnet_checkpoint', default='./checkpoint/controlnet-openpose-sdxl-1.0', type=str)
+    parser.add_argument('--spatial_condition', default='', type=str)
     parser.add_argument('--efficientViT_checkpoint', default='./checkpoint/sam/xl1.pt', type=str)
     parser.add_argument('--dino_checkpoint', default='./checkpoint/GroundingDINO', type=str)
     parser.add_argument('--sam_checkpoint', default='./checkpoint/sam/sam_vit_h_4b8939.pth', type=str)
@@ -221,10 +230,18 @@ if __name__ == '__main__':
     prompts_tmp = copy.deepcopy(prompts)
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
+    if args.spatial_condition is not None and os.path.exists(args.spatial_condition):
+        spatial_condition = Image.open(args.spatial_condition).convert('RGB')
+        spatial_condition = spatial_condition.resize((1024, 1024))
+        print('use pose condition')
+    else:
+        spatial_condition = None
+
     width, height = 1024, 1024
     kwargs = {
         'height': height,
         'width': width,
+        'spatial_condition': spatial_condition,
     }
 
     pipe, controller, pipe_concepts, pipe_list = build_model_sd(args.pretrained_sdxl_model, args.controlnet_checkpoint, device, prompts_tmp, args.lora_path, width//32, height//32, args.style_lora)
