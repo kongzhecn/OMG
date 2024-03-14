@@ -44,6 +44,7 @@ def sample_image(pipe,
     stage=None,
     region_masks=None,
     lora_list = None,
+    styleL=None,
     **extra_kargs
 ):
     images = pipe(
@@ -58,6 +59,7 @@ def sample_image(pipe,
         stage=stage,
         region_masks=region_masks,
         lora_list=lora_list,
+        styleL=styleL,
         **extra_kargs).images
 
     return images
@@ -139,7 +141,7 @@ def prepare_text(prompt, region_prompts):
     return (prompt, region_collection)
 
 
-def build_model_sd(pretrained_model, controlnet_path, device, prompts, lora_paths, width, height):
+def build_model_sd(pretrained_model, controlnet_path, device, prompts, lora_paths, width, height, style_lora):
     controlnet = ControlNetModel.from_pretrained(controlnet_path, torch_dtype=torch.float16).to(device)
     pipe = LoraMultiConceptPipeline.from_pretrained(
         pretrained_model, controlnet=controlnet, torch_dtype=torch.float16, variant="fp16").to(device)
@@ -148,6 +150,10 @@ def build_model_sd(pretrained_model, controlnet_path, device, prompts, lora_path
 
     pipe_concept = StableDiffusionXLPipeline.from_pretrained(pretrained_model, torch_dtype=torch.float16, variant="fp16").to(device)
     pipe_concept.enable_xformers_memory_efficient_attention()
+
+    if style_lora is not None and os.path.exists(style_lora):
+        pipe.load_lora_weights(style_lora, weight_name="pytorch_lora_weights.safetensors", adapter_name='style')
+        pipe_concept.load_lora_weights(style_lora, weight_name="pytorch_lora_weights.safetensors", adapter_name='style')
 
     pipe_list = []
     for lora_path in lora_paths.split('|'):
@@ -192,17 +198,18 @@ def parse_args():
     parser.add_argument('--dino_checkpoint', default='./checkpoint/GroundingDINO', type=str)
     parser.add_argument('--sam_checkpoint', default='./checkpoint/sam/sam_vit_h_4b8939.pth', type=str)
     parser.add_argument('--save_dir', default='results/lora', type=str)
-    parser.add_argument('--prompt', default='Close-up photo of the cool man and beautiful woman in surprised expressions as they accidentally discover a mysterious island while on vacation by the sea, 35mm photograph, film, professional, 4k, highly detailed.', type=str)
+    parser.add_argument('--prompt', default='Close-up photo of the cool man and beautiful woman as they accidentally discover a mysterious island while on vacation by the sea, facing the camera smiling, 35mm photograph, film, professional, 4k, highly detailed.', type=str)
     parser.add_argument('--negative_prompt', default='noisy, blurry, soft, deformed, ugly', type=str)
     parser.add_argument('--prompt_rewrite',
-                        default='[Close-up photo of the Harry Potter in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*'
+                        default='[Close-up photo of the Chris Evans in surprised expressions, 35mm photograph, film, professional, 4k, highly detailed.]-*'
                                 '-[noisy, blurry, soft, deformed, ugly]|'
-                                '[Close-up photo of the Hermione Granger in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-'
+                                '[Close-up photo of the TaylorSwift in surprised expressions, 35mm photograph, film, professional, 4k, highly detailed.]-'
                                 '*-[noisy, blurry, soft, deformed, ugly]',
                         type=str)
-    parser.add_argument('--lora_path', default='./checkpoint/lora/Harry_Potter.safetensors|./checkpoint/lora/Hermione_Granger.safetensors', type=str)
+    parser.add_argument('--lora_path', default='./checkpoint/lora/chris-evans.safetensors|./checkpoint/lora/TaylorSwiftSDXL.safetensors', type=str)
+    parser.add_argument('--style_lora', default='', type=str)
     parser.add_argument('--segment_type', default='yoloworld', help='GroundingDINO or yoloworld', type=str)
-    parser.add_argument('--seed', default=11, type=int)
+    parser.add_argument('--seed', default=14, type=int)
     parser.add_argument('--suffix', default='', type=str)
     return parser.parse_args()
 
@@ -220,13 +227,16 @@ if __name__ == '__main__':
         'width': width,
     }
 
-    pipe, controller, pipe_concepts, pipe_list = build_model_sd(args.pretrained_sdxl_model, args.controlnet_checkpoint, device, prompts_tmp, args.lora_path, width//32, height//32)
+    pipe, controller, pipe_concepts, pipe_list = build_model_sd(args.pretrained_sdxl_model, args.controlnet_checkpoint, device, prompts_tmp, args.lora_path, width//32, height//32, args.style_lora)
     if args.segment_type == 'GroundingDINO':
         detect_model, sam = build_dino_segment_model(args.dino_checkpoint, args.sam_checkpoint)
     else:
         detect_model, sam = build_yolo_segment_model(args.efficientViT_checkpoint, device)
 
-
+    if args.style_lora is not None and os.path.exists(args.style_lora):
+        styleL = True
+    else:
+        styleL = False
 
     prompts_rewrite = [args.prompt_rewrite]
     input_prompt = [prepare_text(p, p_w) for p, p_w in zip(prompts, prompts_rewrite)]
@@ -241,6 +251,7 @@ if __name__ == '__main__':
         controller=controller,
         stage=1,
         lora_list=pipe_list,
+        styleL=styleL,
         **kwargs)
 
     controller.reset()
@@ -265,6 +276,7 @@ if __name__ == '__main__':
             stage=2,
             region_masks=[mask1, mask2],
             lora_list=pipe_list,
+            styleL=styleL,
             **kwargs)
 
 

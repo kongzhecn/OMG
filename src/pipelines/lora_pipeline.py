@@ -250,6 +250,7 @@ class LoraMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
         stage=None,
         region_masks=None,
         lora_list=None,
+        styleL=None,
         **kwargs,
     ):
         callback = kwargs.pop("callback", None)
@@ -335,7 +336,10 @@ class LoraMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
         region_prompt_embeds_list = []
         region_add_text_embeds_list = []
         for lora_param, region_prompt, region_negative_prompt in zip(lora_list, region_prompts, region_negative_prompts):
-            concept_models.set_adapters(lora_param)
+            if styleL:
+                concept_models.set_adapters([lora_param, "style"], adapter_weights=[0.7, 0.5])
+            else:
+                concept_models.set_adapters(lora_param)
             region_prompt_embeds, region_negative_prompt_embeds, region_pooled_prompt_embeds, region_negative_pooled_prompt_embeds = concept_models.encode_prompt(
                 prompt=region_prompt, device=concept_models._execution_device, num_images_per_prompt=1, do_classifier_free_guidance=True, negative_prompt=region_negative_prompt, lora_scale=text_encoder_lora_scale
             )
@@ -581,7 +585,10 @@ class LoraMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
                             region_latent_model_input = torch.cat([region_latent_model_input] * 2)
                             region_added_cond_kwargs = {"text_embeds": region_add_text_embeds,
                                                         "time_ids": region_add_time_ids}
-                            concept_models.set_adapters(lora_param)
+                            if styleL:
+                                concept_models.set_adapters([lora_param, "style"], adapter_weights=[0.7, 0.5])
+                            else:
+                                concept_models.set_adapters(lora_param)
                             region_noise_pred = concept_models.unet(
                                 region_latent_model_input,
                                 t,

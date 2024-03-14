@@ -190,7 +190,7 @@ def predict_mask(segmentmodel, sam, image, TEXT_PROMPT, segmentType, confidence 
 
     return masks
 
-def build_model_sd(pretrained_model, controlnet_path, face_adapter, device, prompts, antelopev2_path, width, height):
+def build_model_sd(pretrained_model, controlnet_path, face_adapter, device, prompts, antelopev2_path, width, height, style_lora):
     controlnet = ControlNetModel.from_pretrained(controlnet_path, torch_dtype=torch.float16)
     pipe = InstantidMultiConceptPipeline.from_pretrained(
         pretrained_model, controlnet=controlnet, torch_dtype=torch.float16, variant="fp16").to(device)
@@ -210,6 +210,11 @@ def build_model_sd(pretrained_model, controlnet_path, face_adapter, device, prom
     pipe_concept.set_ip_adapter_scale(0.8)
     pipe_concept.to(device)
     pipe_concept.image_proj_model.to(pipe_concept._execution_device)
+
+    if style_lora is not None and os.path.exists(style_lora):
+        pipe.load_lora_weights(style_lora, weight_name="pytorch_lora_weights.safetensors", adapter_name='style')
+        pipe_concept.load_lora_weights(style_lora, weight_name="pytorch_lora_weights.safetensors", adapter_name='style')
+
 
     # modify
     app = FaceAnalysis(name='antelopev2', root=antelopev2_path,
@@ -252,20 +257,21 @@ def parse_args():
     parser.add_argument('--dino_checkpoint', default='./checkpoint/GroundingDINO', type=str)
     parser.add_argument('--sam_checkpoint', default='./checkpoint/sam/sam_vit_h_4b8939.pth', type=str)
     parser.add_argument('--antelopev2_path', default='./checkpoint/antelopev2', type=str)
-    parser.add_argument('--save_dir', default='results/multiInstantID', type=str)
-    parser.add_argument('--prompt', default='Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed.', type=str)
+    parser.add_argument('--save_dir', default='results/instantID', type=str)
+    parser.add_argument('--prompt', default='Close-up photo of the cool man and beautiful woman as they accidentally discover a mysterious island while on vacation by the sea, facing the camera smiling, 35mm photograph, film, professional, 4k, highly detailed.', type=str)
     parser.add_argument('--negative_prompt', default='noisy, blurry, soft, deformed, ugly', type=str)
     parser.add_argument('--prompt_rewrite',
-                        default='[Close-up photo of the a man, 35mm photograph, film, professional, 4k, highly detailed.]-*'
+                        default='[Close-up photo of the a man, 35mm photograph, professional, 4k, highly detailed.]-*'
                                 '-[noisy, blurry, soft, deformed, ugly]-*-'
-                                './example/musk_resize.jpeg|'
-                                '[Close-up photo of the a woman, 35mm photograph, film, professional, 4k, highly detailed.]-'
+                                './example/chris-evans.jpg|'
+                                '[Close-up photo of the a woman, 35mm photograph, professional, 4k, highly detailed.]-'
                                 '*-[noisy, blurry, soft, deformed, ugly]-*-'
-                                './example/Johansson.jpg',
+                                './example/TaylorSwift.png',
                         type=str)
-    parser.add_argument('--seed', default=30, type=int)
+    parser.add_argument('--seed', default=53, type=int)
     parser.add_argument('--suffix', default='', type=str)
     parser.add_argument('--segment_type', default='yoloworld', help='GroundingDINO or yoloworld', type=str)
+    parser.add_argument('--style_lora', default='', type=str)
     return parser.parse_args()
 
 
@@ -283,7 +289,7 @@ if __name__ == '__main__':
     }
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    pipe, controller, pipe_concepts, face_app = build_model_sd(args.pretrained_model, args.controlnet_path, args.face_adapter_path, device, prompts_tmp, args.antelopev2_path, width//32, height//32)
+    pipe, controller, pipe_concepts, face_app = build_model_sd(args.pretrained_model, args.controlnet_path, args.face_adapter_path, device, prompts_tmp, args.antelopev2_path, width//32, height//32, args.style_lora)
     if args.segment_type == 'GroundingDINO':
         detect_model, sam = build_dino_segment_model(args.dino_checkpoint, args.sam_checkpoint)
     else:
