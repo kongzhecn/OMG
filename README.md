@@ -98,7 +98,10 @@ And put them under `checkpoint` as follow:
 OMG
 ├── checkpoint
 │   ├── antelopev2
+│   ├── ControlNet
 │   ├── controlnet-openpose-sdxl-1.0
+│   ├── dpt-hybrid-midas
+│   ├── style
 │   ├── InstantID
 │   ├── GroundingDINO
 │   ├── lora
