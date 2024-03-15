@@ -2,6 +2,14 @@
 <h1>OMG: Occlusion-friendly Personalized Multi-concept Generation In Diffusion Models</h1>
 </div>
 
+[![arXiv](https://img.shields.io/badge/ArXiv-2403-brightgreen)]()
+[![Project page](https://img.shields.io/badge/Project-Page-brightgreen)]()
+[![demo](https://img.shields.io/badge/Demo-Hugging%20Face-brightgreen)]()
+
+<iframe width="1280" height="720" src="https://www.youtube.com/embed/96vi3WFXTe0" title="OMG: Occlusion-friendly Personalized Multi-concept Generation in Diffusion Models  #aigc" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+> **Abstract:** *Personalization is an important topic in text-to-image generation, especially the challenging multi-concept personalization. Current multi-concept methods are struggling with identity preservation, occlusion, and the harmony between foreground and background. In this work, we propose OMG, an occlusion-friendly personalized generation framework designed to seamlessly integrate multiple concepts within a single image. We propose a novel two-stage sampling solution. The first stage takes charge of layout generation and visual comprehension information collection for handling occlusions. The second one utilizes the acquired visual comprehension information and the designed noise blending to integrate multiple concepts while considering occlusions. We also observe that the initiation denoising timestep for noise blending is the key to identity preservation and layout. Moreover, our method can be combined with various single-concept models, such as LoRA and InstantID without additional tuning. Especially, LoRA models on [civitai.com](https://civitai.com/) can be exploited directly. Extensive experiments demonstrate that OMG exhibits superior performance in multi-concept personalization.*
+
 ## :label: TODO 
 
 - [x] Release inference code and demo.
@@ -68,6 +76,12 @@ Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stabl
 [controlnet-canny-sdxl-1.0](https://huggingface.co/diffusers/controlnet-canny-sdxl-1.0),
 [dpt-hybrid-midas](https://huggingface.co/Intel/dpt-hybrid-midas).
 
+For `YoloWorld + EfficientViT SAM`:
+[EfficientViT-SAM-XL1](https://github.com/mit-han-lab/efficientvit/blob/master/applications/sam.md), [yolo-world](https://huggingface.co/Fucius/OMG/blob/main/yolo-world.pt).
+
+For `GroundingDINO + SAM`:
+[GroundingDINO](https://huggingface.co/ShilongLiu/GroundingDINO), [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth).
+
 For `Character LoRAs`:
 [Civitai-Chris Evans](https://civitai.com/models/253793?modelVersionId=286084),
 [Civitai-Taylor Swift](https://civitai.com/models/164284/taylor-swift?modelVersionId=185041),
@@ -76,15 +90,6 @@ For `Character LoRAs`:
 
 For `Style LoRAs`:
 [Anime Sketch Style](https://civitai.com/models/202764/anime-sketch-style-sdxl-and-sd15?modelVersionId=258108).
-
-
-For `YoloWorld + EfficientViT SAM`:
-[EfficientViT-SAM-XL1](https://github.com/mit-han-lab/efficientvit/blob/master/applications/sam.md), [yolo-world](https://huggingface.co/Fucius/OMG/blob/main/yolo-world.pt).
-
-For `GroundingDINO + SAM`:
-[GroundingDINO](https://huggingface.co/ShilongLiu/GroundingDINO), [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth).
-
-
 
 And put them under `checkpoint` as follow:
 ```angular2html
@@ -107,7 +112,7 @@ OMG
 └── inference_lora.py
 ```
 
-If you use `YoloWorld`, put `yolo-world.pt` (download from [lora](https://huggingface.co/Fucius/OMG)) to `/tmp/cache/yolo_world/l/yolo-world.pt`. And put `ViT-B-32.pt` (download from [openai]( https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt )) to `~/.cache/clip/ViT-B-32.pt`
+If you use `YoloWorld`, put `yolo-world.pt` to `/tmp/cache/yolo_world/l/yolo-world.pt`. And put `ViT-B-32.pt` (download from [openai]( https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt )) to `~/.cache/clip/ViT-B-32.pt`
 
 Or you can manually set the checkpoint path as follows:
 
@@ -140,7 +145,7 @@ python inference_lora.py \
     --prompt <prompt for the two person> \
     --negative_prompt <negative prompt> \
     --prompt_rewrite "[<prompt for person 1>]-*-[<negative prompt>]|[<prompt for person 2>]-*-[negative prompt]" \
-    --lora_path "[<character 1 lora path>|<character 2 lora path>]"
+    --lora_path "[<Lora path for character1>|<Lora path for character2>]"
 ```
 For example:
 ```
