@@ -33,7 +33,30 @@
 - [2023/3/18] 🔥 We release the [technical report]().
 - [2023/3/17] 🔥 We release the source code and gradio demo of OMG.
 
+## 🔆 Introduction
+### 1. OMG + LoRA (ID with multiple images)
 
+<p align="center">
+  <img src="assets/lora.png" height=390>
+</p>
+
+### 2. OMG + InstantID (ID with single image)
+
+<p align="center">
+  <img src="assets/instantid.png" height=390>
+</p>
+
+### 3. OMG + ControlNet (Layout Control )
+
+<p align="center">
+  <img src="assets/controlnet.png" height=1024>
+</p>
+
+### 4. OMG + style LoRAs (Style Control)
+
+<p align="center">
+  <img src="assets/style.png" height=390>
+</p>
 
 ## :wrench: Dependencies and Installation
 
