@@ -6,6 +6,7 @@
 [![Project page](https://img.shields.io/badge/Project-Page-brightgreen)]()
 [![demo](https://img.shields.io/badge/Demo-Hugging%20Face-brightgreen)]()
 
+> **TL; DR:**  OMG is a framework for multi-concept image generation, supporting character and style LoRAs on [Civitai.com](https://civitai.com/). It also can be combined with [InstantID](https://github.com/InstantID/InstantID) for multiple IDs with using a single image for each ID.    
 
 <p align="center">
   <img src="assets/teaser.png">
@@ -14,7 +15,7 @@
 
 [![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/96vi3WFXTe0/1.jpg)](https://youtu.be/96vi3WFXTe0)
 
-> **Abstract:** *Personalization is an important topic in text-to-image generation, especially the challenging multi-concept personalization. Current multi-concept methods are struggling with identity preservation, occlusion, and the harmony between foreground and background. In this work, we propose OMG, an occlusion-friendly personalized generation framework designed to seamlessly integrate multiple concepts within a single image. We propose a novel two-stage sampling solution. The first stage takes charge of layout generation and visual comprehension information collection for handling occlusions. The second one utilizes the acquired visual comprehension information and the designed noise blending to integrate multiple concepts while considering occlusions. We also observe that the initiation denoising timestep for noise blending is the key to identity preservation and layout. Moreover, our method can be combined with various single-concept models, such as LoRA and InstantID without additional tuning. Especially, LoRA models on [civitai.com](https://civitai.com/) can be exploited directly. Extensive experiments demonstrate that OMG exhibits superior performance in multi-concept personalization.*
+>  **Abstract:** *Personalization is an important topic in text-to-image generation, especially the challenging multi-concept personalization. Current multi-concept methods are struggling with identity preservation, occlusion, and the harmony between foreground and background. In this work, we propose OMG, an occlusion-friendly personalized generation framework designed to seamlessly integrate multiple concepts within a single image. We propose a novel two-stage sampling solution. The first stage takes charge of layout generation and visual comprehension information collection for handling occlusions. The second one utilizes the acquired visual comprehension information and the designed noise blending to integrate multiple concepts while considering occlusions. We also observe that the initiation denoising timestep for noise blending is the key to identity preservation and layout. Moreover, our method can be combined with various single-concept models, such as LoRA and InstantID without additional tuning. Especially, LoRA models on [civitai.com](https://civitai.com/) can be exploited directly. Extensive experiments demonstrate that OMG exhibits superior performance in multi-concept personalization.*
 
 
 ## 📝 Changelog
