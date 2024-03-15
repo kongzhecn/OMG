@@ -76,6 +76,7 @@ Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stabl
 [ControlNet](https://huggingface.co/lllyasviel/ControlNet),
 [controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0),
 [controlnet-canny-sdxl-1.0](https://huggingface.co/diffusers/controlnet-canny-sdxl-1.0),
+[controlnet-depth-sdxl-1.0](https://huggingface.co/diffusers/controlnet-depth-sdxl-1.0),
 [dpt-hybrid-midas](https://huggingface.co/Intel/dpt-hybrid-midas).
 
 For `YoloWorld + EfficientViT SAM`:
@@ -100,6 +101,8 @@ OMG
 │   ├── antelopev2
 │   ├── ControlNet
 │   ├── controlnet-openpose-sdxl-1.0
+│   ├── controlnet-canny-sdxl-1.0
+│   ├── controlnet-depth-sdxl-1.0
 │   ├── dpt-hybrid-midas
 │   ├── style
 │   ├── InstantID
