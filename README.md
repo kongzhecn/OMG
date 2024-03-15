@@ -60,20 +60,31 @@ More installation details can be found in [GroundingDINO](https://github.com/IDE
 
 ## ⏬ Pretrained Model Preparation
 
-Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0), 
-[lora](https://huggingface.co/Fucius/OMG), 
-[controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0), 
+Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0),
 [InstantID](https://huggingface.co/InstantX/InstantID/tree/main), 
 [antelopev2](https://drive.google.com/file/d/18wEUfMNohBJ4K3Ly5wpTejPfDzp-8fI8/view?usp=sharing),
+[ControlNet](https://huggingface.co/lllyasviel/ControlNet),
+[controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0),
+[controlnet-canny-sdxl-1.0](https://huggingface.co/diffusers/controlnet-canny-sdxl-1.0),
+[dpt-hybrid-midas](https://huggingface.co/Intel/dpt-hybrid-midas).
+
+For `Character LoRAs`:
 [Civitai-Chris Evans](https://civitai.com/models/253793?modelVersionId=286084),
 [Civitai-Taylor Swift](https://civitai.com/models/164284/taylor-swift?modelVersionId=185041),
+[Harry Potter](https://huggingface.co/Fucius/OMG/blob/main/lora/Harry_Potter.safetensors),
+[Hermione Granger](https://huggingface.co/Fucius/OMG/blob/main/lora/Hermione_Granger.safetensors).
+
+For `Style LoRAs`:
+[Anime Sketch Style](https://civitai.com/models/202764/anime-sketch-style-sdxl-and-sd15?modelVersionId=258108).
 
 
 For `YoloWorld + EfficientViT SAM`:
-[EfficientViT-SAM-XL1](https://github.com/mit-han-lab/efficientvit/blob/master/applications/sam.md).
+[EfficientViT-SAM-XL1](https://github.com/mit-han-lab/efficientvit/blob/master/applications/sam.md), [yolo-world](https://huggingface.co/Fucius/OMG/blob/main/yolo-world.pt).
 
 For `GroundingDINO + SAM`:
 [GroundingDINO](https://huggingface.co/ShilongLiu/GroundingDINO), [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth).
+
+
 
 And put them under `checkpoint` as follow:
 ```angular2html
@@ -128,14 +139,16 @@ The &lt;TOK&gt; for `Harry_Potter.safetensors` is `Harry Potter` and for `Hermio
 python inference_lora.py \
     --prompt <prompt for the two person> \
     --negative_prompt <negative prompt> \
-    --prompt_rewrite "[<prompt for person 1>]-*-[<negative prompt>]|[<prompt for person 2>]-*-[negative prompt]",
+    --prompt_rewrite "[<prompt for person 1>]-*-[<negative prompt>]|[<prompt for person 2>]-*-[negative prompt]" \
+    --lora_path "[<character 1 lora path>|<character 2 lora path>]"
 ```
 For example:
 ```
 python inference_lora.py \
     --prompt "Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed." \
     --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
-    --prompt_rewrite '[Close-up photo of the Harry Potter in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]|[Close-up photo of the Hermione Granger in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]'
+    --prompt_rewrite '[Close-up photo of the Harry Potter in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]|[Close-up photo of the Hermione Granger in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]' \
+    --lora_path './checkpoint/lora/chris-evans.safetensors|./checkpoint/lora/TaylorSwiftSDXL.safetensors'
 ```
 ### 2: OMG with InstantID
 

@@ -5,11 +5,18 @@ import random
 import numpy as np
 from gradio_demo.character_template import character_man, lorapath_man
 from gradio_demo.character_template import character_woman, lorapath_woman
+from gradio_demo.character_template import styles, lorapath_styles
 import torch
 import os
 from typing import Tuple, List
 import copy
 import argparse
+from diffusers.utils import load_image
+import cv2
+from PIL import Image
+from transformers import DPTFeatureExtractor, DPTForDepthEstimation
+from controlnet_aux import OpenposeDetector
+from controlnet_aux.open_pose.body import Body
 
 try:
     from inference.models import YOLOWorld
@@ -37,6 +44,7 @@ from src.pipelines.lora_pipeline import revise_regionally_controlnet_forward
 
 CHARACTER_MAN_NAMES = list(character_man.keys())
 CHARACTER_WOMAN_NAMES = list(character_woman.keys())
+STYLE_NAMES = list(styles.keys())
 MAX_SEED = np.iinfo(np.int32).max
 
 ### Description
@@ -89,8 +97,16 @@ def sample_image(pipe,
     stage=None,
     region_masks=None,
     lora_list = None,
+    styleL=None,
     **extra_kargs
 ):
+
+    spatial_condition = extra_kargs.pop('spatial_condition')
+    if spatial_condition is not None:
+        spatial_condition_input = [spatial_condition] * len(input_prompt)
+    else:
+        spatial_condition_input = None
+
     images = pipe(
         prompt=input_prompt,
         concept_models=concept_models,
@@ -103,6 +119,8 @@ def sample_image(pipe,
         stage=stage,
         region_masks=region_masks,
         lora_list=lora_list,
+        styleL=styleL,
+        image=spatial_condition_input,
         **extra_kargs).images
 
     return images
@@ -195,8 +213,12 @@ def build_model_sd(pretrained_model, controlnet_path, device, prompts):
                                                              variant="fp16").to(device)
     return pipe, controller, pipe_concept
 
-def build_model_lora(pipe_concept, lora_paths):
+def build_model_lora(pipe_concept, lora_paths, style_path):
     pipe_list = []
+
+    if style_path is not None and os.path.exists(style_path):
+        pipe_concept.load_lora_weights(style_path, weight_name="pytorch_lora_weights.safetensors", adapter_name='style')
+
     for lora_path in lora_paths.split('|'):
         adapter_name = lora_path.split('/')[-1].split('.')[0]
         pipe_concept.load_lora_weights(lora_path, weight_name="pytorch_lora_weights.safetensors", adapter_name=adapter_name)
@@ -233,15 +255,6 @@ def build_dino_segment_model(ckpt_repo_id, sam_checkpoint):
 
 
 
-
-def remove_tips():
-    return gr.update(visible=False)
-
-def randomize_seed_fn(seed: int, randomize_seed: bool) -> int:
-    if randomize_seed:
-        seed = random.randint(0, MAX_SEED)
-    return seed
-
 def main(device, segment_type):
     pipe, controller, pipe_concept = build_model_sd(args.pretrained_sdxl_model, args.controlnet_checkpoint, device, prompts_tmp)
 
@@ -260,14 +273,69 @@ def main(device, segment_type):
                        "768*1344",
                        "728*1440"]
 
-    def generate_image(prompt1, prompt2, prompt3, prompt4, negative_prompt, man, woman, resolution, local_prompt1, local_prompt2, seed):
+    condition_list = ["None",
+                      "Human pose",
+                      "Canny Edge",
+                      "Depth"]
+
+    depth_estimator = DPTForDepthEstimation.from_pretrained(args.dpt_checkpoint).to("cuda")
+    feature_extractor = DPTFeatureExtractor.from_pretrained(args.dpt_checkpoint)
+    body_model = Body(args.pose_detector_checkpoint)
+    openpose = OpenposeDetector(body_model)
+
+    def remove_tips():
+        return gr.update(visible=False)
+
+    def randomize_seed_fn(seed: int, randomize_seed: bool) -> int:
+        if randomize_seed:
+            seed = random.randint(0, MAX_SEED)
+        return seed
+
+    def get_humanpose(img):
+        openpose_image = openpose(img)
+        return openpose_image
+
+    def get_cannyedge(image):
+        image = np.array(image)
+        image = cv2.Canny(image, 100, 200)
+        image = image[:, :, None]
+        image = np.concatenate([image, image, image], axis=2)
+        canny_image = Image.fromarray(image)
+        return canny_image
+
+    def get_depth(image):
+        image = feature_extractor(images=image, return_tensors="pt").pixel_values.to("cuda")
+        with torch.no_grad(), torch.autocast("cuda"):
+            depth_map = depth_estimator(image).predicted_depth
+
+        depth_map = torch.nn.functional.interpolate(
+            depth_map.unsqueeze(1),
+            size=(1024, 1024),
+            mode="bicubic",
+            align_corners=False,
+        )
+        depth_min = torch.amin(depth_map, dim=[1, 2, 3], keepdim=True)
+        depth_max = torch.amax(depth_map, dim=[1, 2, 3], keepdim=True)
+        depth_map = (depth_map - depth_min) / (depth_max - depth_min)
+        image = torch.cat([depth_map] * 3, dim=1)
+        image = image.permute(0, 2, 3, 1).cpu().numpy()[0]
+        image = Image.fromarray((image * 255.0).clip(0, 255).astype(np.uint8))
+        return image
+
+    def generate_image(prompt1, prompt2, prompt3, prompt4, negative_prompt, man, woman, resolution, local_prompt1, local_prompt2, seed, condition, condition_img1, condition_img2, condition_img3, condition_img4, style):
         try:
             path1 = lorapath_man[man]
             path2 = lorapath_woman[woman]
             pipe_concept.unload_lora_weights()
-            pipe_list = build_model_lora(pipe_concept, path1 + "|" + path2)
+            pipe_list = build_model_lora(pipe_concept, path1 + "|" + path2, lorapath_styles[style])
+
+            if lorapath_styles[style] is not None and os.path.exists(lorapath_styles[style]):
+                styleL = True
+            else:
+                styleL = False
 
             input_list = [prompt1, prompt2, prompt3, prompt4]
+            condition_list = [condition_img1, condition_img2, condition_img3, condition_img4]
             output_list = []
 
             width, height = int(resolution.split("*")[0]), int(resolution.split("*")[1])
@@ -277,12 +345,25 @@ def main(device, segment_type):
                 'width': width,
             }
 
-            for prompt in input_list:
+            for prompt, condition_img in zip(input_list, condition_list):
                 if prompt!='':
                     input_prompt = []
                     p = '{prompt}, 35mm photograph, film, professional, 4k, highly detailed.'
+                    if styleL:
+                        p = styles[style] + p
                     input_prompt.append([p.replace("{prompt}", prompt), p.replace("{prompt}", prompt)])
-                    input_prompt.append([(local_prompt1, character_man.get(man)[1]), (local_prompt2, character_woman.get(woman)[1])])
+                    input_prompt.append([(styles[style] + local_prompt1, character_man.get(man)[1]), (styles[style] + local_prompt2, character_woman.get(woman)[1])])
+
+                    if condition == 'Human pose' and condition_img is not None:
+                        spatial_condition = get_humanpose(condition_img).resize((width, height))
+                    elif condition == 'Canny Edge' and condition_img is not None:
+                        spatial_condition = get_cannyedge(condition_img).resize((width, height))
+                    elif condition == 'Depth' and condition_img is not None:
+                        spatial_condition = get_depth(condition_img).resize((width, height))
+                    else:
+                        spatial_condition = None
+
+                    kwargs['spatial_condition'] = spatial_condition
 
                     controller.reset()
                     image = sample_image(
@@ -294,17 +375,18 @@ def main(device, segment_type):
                         controller=controller,
                         stage=1,
                         lora_list=pipe_list,
+                        styleL=styleL,
                         **kwargs)
 
                     controller.reset()
                     if pipe.tokenizer("man")["input_ids"][1] in pipe.tokenizer(args.prompt)["input_ids"][1:-1]:
-                        mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence=0.2,
+                        mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence=0.15,
                                              threshold=0.5)
                     else:
                         mask1 = None
 
                     if pipe.tokenizer("woman")["input_ids"][1] in pipe.tokenizer(args.prompt)["input_ids"][1:-1]:
-                        mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence=0.2,
+                        mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence=0.15,
                                              threshold=0.5)
                     else:
                         mask2 = None
@@ -322,6 +404,7 @@ def main(device, segment_type):
                             stage=2,
                             region_masks=[mask1, mask2],
                             lora_list=pipe_list,
+                            styleL=styleL,
                             **kwargs)
                         output_list.append(image[1])
                 else:
@@ -350,11 +433,19 @@ def main(device, segment_type):
             gallery4 = gr.Image(label="Generated Images", height=512, width=512)
             usage_tips = gr.Markdown(label="Usage tips of OMG", value=tips, visible=False)
 
+        with gr.Row():
+            condition_img1 = gr.Image(label="Input condition", height=128, width=128)
+            condition_img2 = gr.Image(label="Input condition", height=128, width=128)
+            condition_img3 = gr.Image(label="Input condition", height=128, width=128)
+            condition_img4 = gr.Image(label="Input condition", height=128, width=128)
+
         # character choose
         with gr.Row():
             man = gr.Dropdown(label="Character 1 selection", choices=CHARACTER_MAN_NAMES, value="Harry Potter (identifier: Harry Potter)")
             woman = gr.Dropdown(label="Character 2 selection", choices=CHARACTER_WOMAN_NAMES, value="Hermione Granger (identifier: Hermione Granger)")
             resolution = gr.Dropdown(label="Image Resolution (width*height)", choices=resolution_list, value="1024*1024")
+            condition = gr.Dropdown(label="Input condition type", choices=condition_list, value="None")
+            style = gr.Dropdown(label="style", choices=STYLE_NAMES, value="None")
 
         with gr.Row():
             local_prompt1 = gr.Textbox(label="Character1_prompt",
@@ -372,7 +463,7 @@ def main(device, segment_type):
             prompt = gr.Textbox(label="Prompt 1",
                                 info="Give a simple prompt to describe the first image content",
                                 placeholder="Required",
-                                value="close-up shot, photography, the man and woman on street, facing the camera smiling")
+                                value="close-up shot, photography, the cool man and beautiful woman as they accidentally discover a mysterious island while on vacation by the sea, facing the camera smiling")
             prompt2 = gr.Textbox(label="Prompt 2",
                                  info="Give a simple prompt to describe the second image content",
                                  placeholder="optional",
@@ -412,7 +503,7 @@ def main(device, segment_type):
             api_name=False,
         ).then(
             fn=generate_image,
-            inputs=[prompt, prompt2, prompt3, prompt4, negative_prompt, man, woman, resolution, local_prompt1, local_prompt2, seed],
+            inputs=[prompt, prompt2, prompt3, prompt4, negative_prompt, man, woman, resolution, local_prompt1, local_prompt2, seed, condition, condition_img1, condition_img2, condition_img3, condition_img4, style],
             outputs=[gallery, gallery2, gallery3, gallery4]
         )
     demo.launch(server_name='0.0.0.0',server_port=7861, debug=True)
@@ -424,6 +515,8 @@ def parse_args():
     parser.add_argument('--efficientViT_checkpoint', default='./checkpoint/sam/xl1.pt', type=str)
     parser.add_argument('--dino_checkpoint', default='./checkpoint/GroundingDINO', type=str)
     parser.add_argument('--sam_checkpoint', default='./checkpoint/sam/sam_vit_h_4b8939.pth', type=str)
+    parser.add_argument('--dpt_checkpoint', default='./checkpoint/dpt-hybrid-midas', type=str)
+    parser.add_argument('--pose_detector_checkpoint', default='./checkpoint/ControlNet/annotator/ckpts/body_pose_model.pth', type=str)
     parser.add_argument('--prompt', default='Close-up photo of the cool man and beautiful woman in surprised expressions as they accidentally discover a mysterious island while on vacation by the sea, 35mm photograph, film, professional, 4k, highly detailed.', type=str)
     parser.add_argument('--negative_prompt', default='noisy, blurry, soft, deformed, ugly', type=str)
     parser.add_argument('--seed', default=22, type=int)
