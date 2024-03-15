@@ -1,27 +1,40 @@
 <div align="center">
 <h1>OMG: Occlusion-friendly Personalized Multi-concept Generation In Diffusion Models</h1>
+
+[Zhe Kong](https://github.com/kongzhecn) · [Yong Zhang*](https://yzhang2016.github.io/) · [Tianyu Yang](https://tianyu-yang.com/) · [Tao Wang](https://taowangzj.github.io/)· [Kaihao Zhang](https://zhangkaihao.github.io/)
+
+[Bizhu Wu](https://scholar.google.com/citations?user=u7nZ3bgAAAAJ&hl=zh-CN) · [Guanying Chen](https://guanyingc.github.io/) · [Wei Liu](https://scholar.google.com/citations?user=AjxoEpIAAAAJ&hl=en) ·   [Wenhan Luo*](https://whluo.github.io/)
+
+<sup>*</sup>corresponding authors
+
+
+<a href='https://instantid.github.io/'><img src='https://img.shields.io/badge/Project-Page-green'></a>
+<a href='https://arxiv.org/abs/2401.07519'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
+[![GitHub](https://img.shields.io/github/stars/kongzhecn/OMG?style=social)](https://github.com/kongzhecn/OMG)
+
+<a href='https://huggingface.co/spaces/InstantX/InstantID'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue'></a>
+
 </div>
 
-[![arXiv](https://img.shields.io/badge/ArXiv-2403-brightgreen)]()
-[![Project page](https://img.shields.io/badge/Project-Page-brightgreen)]()
-[![demo](https://img.shields.io/badge/Demo-Hugging%20Face-brightgreen)]()
-
+> **TL; DR:**  OMG is a framework for multi-concept image generation, supporting character and style LoRAs on [Civitai.com](https://civitai.com/). It also can be combined with [InstantID](https://github.com/InstantID/InstantID) for multiple IDs with using a single image for each ID.    
 
 <p align="center">
   <img src="assets/teaser.png">
 </p>
 
 
-[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/96vi3WFXTe0/1.jpg)](https://youtu.be/96vi3WFXTe0)
-> **TL; DR:**  OMG is a framework for multi-concept image generation, supporting character and style LoRAs on [Civitai.com](https://civitai.com/). It also can be combined with [InstantID](https://github.com/InstantID/InstantID) for multiple IDs with using a single image for each ID.    
-
->  **Abstract:** *Personalization is an important topic in text-to-image generation, especially the challenging multi-concept personalization. Current multi-concept methods are struggling with identity preservation, occlusion, and the harmony between foreground and background. In this work, we propose OMG, an occlusion-friendly personalized generation framework designed to seamlessly integrate multiple concepts within a single image. We propose a novel two-stage sampling solution. The first stage takes charge of layout generation and visual comprehension information collection for handling occlusions. The second one utilizes the acquired visual comprehension information and the designed noise blending to integrate multiple concepts while considering occlusions. We also observe that the initiation denoising timestep for noise blending is the key to identity preservation and layout. Moreover, our method can be combined with various single-concept models, such as LoRA and InstantID without additional tuning. Especially, LoRA models on [civitai.com](https://civitai.com/) can be exploited directly. Extensive experiments demonstrate that OMG exhibits superior performance in multi-concept personalization.*
 
 
-## 📝 Changelog
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/96vi3WFXTe0/1.jpg)](https://youtu.be/96vi3WFXTe0 "Video Title")
 
-- __[2024.03.18]__: Release OMG code.
-<br>
+
+
+
+## :label: Change Log 
+- [2023/3/18] 🔥 We release the [technical report]().
+- [2023/3/17] 🔥 We release the source code and gradio demo of OMG.
+
+
 
 ## :wrench: Dependencies and Installation
 
