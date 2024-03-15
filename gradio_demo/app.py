@@ -213,8 +213,17 @@ def build_model_sd(pretrained_model, controlnet_path, device, prompts):
                                                              variant="fp16").to(device)
     return pipe, controller, pipe_concept
 
-def build_model_lora(pipe_concept, lora_paths, style_path):
+def build_model_lora(pipe_concept, lora_paths, style_path, condition, args):
     pipe_list = []
+    if condition == "Human pose":
+        controlnet = ControlNetModel.from_pretrained(args.openpose_checkpoint, torch_dtype=torch.float16).to(device)
+        pipe_concept.controlnet = controlnet
+    elif condition == "Canny Edge":
+        controlnet = ControlNetModel.from_pretrained(args.canny_checkpoint, torch_dtype=torch.float16).to(device)
+        pipe_concept.controlnet = controlnet
+    elif condition == "Depth":
+        controlnet = ControlNetModel.from_pretrained(args.depth_checkpoint, torch_dtype=torch.float16).to(device)
+        pipe_concept.controlnet = controlnet
 
     if style_path is not None and os.path.exists(style_path):
         pipe_concept.load_lora_weights(style_path, weight_name="pytorch_lora_weights.safetensors", adapter_name='style')
@@ -256,7 +265,7 @@ def build_dino_segment_model(ckpt_repo_id, sam_checkpoint):
 
 
 def main(device, segment_type):
-    pipe, controller, pipe_concept = build_model_sd(args.pretrained_sdxl_model, args.controlnet_checkpoint, device, prompts_tmp)
+    pipe, controller, pipe_concept = build_model_sd(args.pretrained_sdxl_model, args.openpose_checkpoint, device, prompts_tmp)
 
     if segment_type == 'GroundingDINO':
         detect_model, sam = build_dino_segment_model(args.dino_checkpoint, args.sam_checkpoint)
@@ -327,7 +336,7 @@ def main(device, segment_type):
             path1 = lorapath_man[man]
             path2 = lorapath_woman[woman]
             pipe_concept.unload_lora_weights()
-            pipe_list = build_model_lora(pipe_concept, path1 + "|" + path2, lorapath_styles[style])
+            pipe_list = build_model_lora(pipe_concept, path1 + "|" + path2, lorapath_styles[style], condition, args)
 
             if lorapath_styles[style] is not None and os.path.exists(lorapath_styles[style]):
                 styleL = True
@@ -511,7 +520,9 @@ def main(device, segment_type):
 def parse_args():
     parser = argparse.ArgumentParser('', add_help=False)
     parser.add_argument('--pretrained_sdxl_model', default='./checkpoint/stable-diffusion-xl-base-1.0', type=str)
-    parser.add_argument('--controlnet_checkpoint', default='./checkpoint/controlnet-openpose-sdxl-1.0', type=str)
+    parser.add_argument('--openpose_checkpoint', default='./checkpoint/controlnet-openpose-sdxl-1.0', type=str)
+    parser.add_argument('--canny_checkpoint', default='./checkpoint/controlnet-canny-sdxl-1.0', type=str)
+    parser.add_argument('--depth_checkpoint', default='./checkpoint/controlnet-depth-sdxl-1.0', type=str)
     parser.add_argument('--efficientViT_checkpoint', default='./checkpoint/sam/xl1.pt', type=str)
     parser.add_argument('--dino_checkpoint', default='./checkpoint/GroundingDINO', type=str)
     parser.add_argument('--sam_checkpoint', default='./checkpoint/sam/sam_vit_h_4b8939.pth', type=str)
