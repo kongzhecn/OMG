@@ -24,7 +24,7 @@
 
 
 
-> **Trailor Demo:** A short trailor created by using OMG + SVD.
+> **Trailor Demo:** A short trailor "Home Defense" created by using OMG + SVD.
 
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/96vi3WFXTe0/0.jpg)](https://www.youtube.com/watch?v=96vi3WFXTe0)
 
