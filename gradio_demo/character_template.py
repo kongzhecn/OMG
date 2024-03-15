@@ -38,22 +38,7 @@ style_list = [
         "name": "Anime sketch style",
         "prompt": "Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch, ",
         "path": "./checkpoint/style/Anime_Sketch_SDXL.safetensors",
-    },
-    {
-        "name": "Comic Book style",
-        "prompt": "in comic book style, ",
-        "path": "./checkpoint/style/EldritchComicsXL1.2.safetensors",
-    },
-    {
-        "name": "Cyberpunk style",
-        "prompt": "in cyberpunk style, ",
-        "path": "./checkpoint/style/sdxl_cyberpunk.safetensors",
-    },
-    {
-        "name": "Paint Splash Style",
-        "prompt": "in Colorsplash style, ",
-        "path": "./checkpoint/style/SDXLPaintSplash.safetensors",
-    },
+    }
 ]
 
 character_man = {k["name"]: (k["prompt"], k["negative_prompt"]) for k in character_list_man}
