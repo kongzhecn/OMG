@@ -11,6 +11,12 @@ character_list_man = [
         "negative_prompt": "noisy, blurry, soft, deformed, ugly",
         "path": "./checkpoint/lora/chris-evans.safetensors",
     },
+    {
+        "name": "Jordan Torres (identifier: jordan_torres)",
+        "prompt": "Close-up photo of the jordan_torres man, 35mm photograph, film, professional, 4k, highly detailed.",
+        "negative_prompt": "noisy, blurry, soft, deformed, ugly",
+        "path": "./checkpoint/lora/jordan_torres_v2_xl.safetensors",
+    },
 ]
 
 character_list_woman = [
@@ -25,6 +31,12 @@ character_list_woman = [
         "prompt": "Close-up photo of the TaylorSwift, 35mm photograph, film, professional, 4k, highly detailed.",
         "negative_prompt": "noisy, blurry, soft, deformed, ugly",
         "path": "./checkpoint/lora/TaylorSwiftSDXL.safetensors",
+    },
+    {
+        "name": "Keira Knightley (identifier: ohwx woman)",
+        "prompt": "Close-up photo of the ohwx woman, 35mm photograph, film, professional, 4k, highly detailed.",
+        "negative_prompt": "noisy, blurry, soft, deformed, ugly",
+        "path": "./checkpoint/lora/keira_lora_sdxl_v1-000008.safetensors",
     },
 ]
 

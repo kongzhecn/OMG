@@ -1,14 +1,14 @@
 <div align="center">
 <h1>OMG: Occlusion-friendly Personalized Multi-concept Generation In Diffusion Models</h1>
 
-[Zhe Kong](https://github.com/kongzhecn) · [Yong Zhang*](https://yzhang2016.github.io/) · [Tianyu Yang](https://tianyu-yang.com/) · [Tao Wang](https://taowangzj.github.io/)· [Kaihao Zhang](https://zhangkaihao.github.io/)
+[Zhe Kong](https://scholar.google.com/citations?user=4X3yLwsAAAAJ&hl=zh-CN) · [Yong Zhang*](https://yzhang2016.github.io/) · [Tianyu Yang](https://tianyu-yang.com/) · [Tao Wang](https://taowangzj.github.io/)· [Kaihao Zhang](https://zhangkaihao.github.io/)
 
 [Bizhu Wu](https://scholar.google.com/citations?user=u7nZ3bgAAAAJ&hl=zh-CN) · [Guanying Chen](https://guanyingc.github.io/) · [Wei Liu](https://scholar.google.com/citations?user=AjxoEpIAAAAJ&hl=en) ·   [Wenhan Luo*](https://whluo.github.io/)
 
-<sup>*</sup>corresponding authors
+<sup>*</sup>Corresponding Authors
 
 
-<a href='xxx/'><img src='https://img.shields.io/badge/Project-Page-green'></a>
+<a href='https://kongzhecn.github.io/omg-project/'><img src='https://img.shields.io/badge/Project-Page-green'></a>
 <a href='xxx'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
 [![GitHub](https://img.shields.io/github/stars/kongzhecn/OMG?style=social)](https://github.com/kongzhecn/OMG)
 
@@ -110,14 +110,18 @@ More installation details can be found in [GroundingDINO](https://github.com/IDE
 
 ## ⏬ Pretrained Model Preparation
 
+### 1) DownLoad Models
+
+#### 1. Required download:
+
 Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0),
+[controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0).
+
+For `InstantID + OMG` download:
 [InstantID](https://huggingface.co/InstantX/InstantID/tree/main), 
 [antelopev2](https://drive.google.com/file/d/18wEUfMNohBJ4K3Ly5wpTejPfDzp-8fI8/view?usp=sharing),
-[ControlNet](https://huggingface.co/lllyasviel/ControlNet),
-[controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0),
-[controlnet-canny-sdxl-1.0](https://huggingface.co/diffusers/controlnet-canny-sdxl-1.0),
-[controlnet-depth-sdxl-1.0](https://huggingface.co/diffusers/controlnet-depth-sdxl-1.0),
-[dpt-hybrid-midas](https://huggingface.co/Intel/dpt-hybrid-midas).
+
+#### 2. For Visual comprehension, you can choose "YoloWorld + EfficientViT SAM" or "GroundingDINO + SAM".
 
 For `YoloWorld + EfficientViT SAM`:
 [EfficientViT-SAM-XL1](https://github.com/mit-han-lab/efficientvit/blob/master/applications/sam.md), [yolo-world](https://huggingface.co/Fucius/OMG/blob/main/yolo-world.pt).
@@ -125,16 +129,32 @@ For `YoloWorld + EfficientViT SAM`:
 For `GroundingDINO + SAM`:
 [GroundingDINO](https://huggingface.co/ShilongLiu/GroundingDINO), [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth).
 
-For `Character LoRAs`:
-[Civitai-Chris Evans](https://civitai.com/models/253793?modelVersionId=286084),
-[Civitai-Taylor Swift](https://civitai.com/models/164284/taylor-swift?modelVersionId=185041),
-[Harry Potter](https://huggingface.co/Fucius/OMG/blob/main/lora/Harry_Potter.safetensors),
-[Hermione Granger](https://huggingface.co/Fucius/OMG/blob/main/lora/Hermione_Granger.safetensors).
+#### 3. For Character LoRAs, download at least one character for man and another character for woman.
 
-For `Style LoRAs`:
+For `Character LoRAs for man`:
+[Chris Evans](https://civitai.com/models/253793?modelVersionId=286084),
+[Harry Potter](https://huggingface.co/Fucius/OMG/blob/main/lora/Harry_Potter.safetensors),
+[Jordan Torres](https://civitai.com/models/132387/jordan-torres-15-sdxl?modelVersionId=366964).
+
+For `Character LoRAs for woman`:
+[Taylor Swift](https://civitai.com/models/164284/taylor-swift?modelVersionId=185041),
+[Hermione Granger](https://huggingface.co/Fucius/OMG/blob/main/lora/Hermione_Granger.safetensors),
+[Keira Knightley](https://civitai.com/models/172431/keira-knightley-sdxl?modelVersionId=193658).
+
+#### 4. (Optional) If using ControlNet, download:
+
+[ControlNet](https://huggingface.co/lllyasviel/ControlNet/blob/main/annotator/ckpts/body_pose_model.pth),
+[controlnet-canny-sdxl-1.0](https://huggingface.co/diffusers/controlnet-canny-sdxl-1.0),
+[controlnet-depth-sdxl-1.0](https://huggingface.co/diffusers/controlnet-depth-sdxl-1.0),
+[dpt-hybrid-midas](https://huggingface.co/Intel/dpt-hybrid-midas).
+
+#### 5. (Optional) If using Style LoRAs, download:
+
 [Anime Sketch Style](https://civitai.com/models/202764/anime-sketch-style-sdxl-and-sd15?modelVersionId=258108).
 
-And put them under `checkpoint` as follow:
+### 2) Preparation
+
+Put the models under `checkpoint` as follow:
 ```angular2html
 OMG
 ├── checkpoint
@@ -145,11 +165,16 @@ OMG
 │   ├── controlnet-depth-sdxl-1.0
 │   ├── dpt-hybrid-midas
 │   ├── style
+│   │   └── Anime_Sketch_SDXL.safetensors
 │   ├── InstantID
 │   ├── GroundingDINO
 │   ├── lora
+│   │   ├── chris-evans.safetensors
 │   │   ├── Harry_Potter.safetensors
-│   │   └── Hermione_Granger.safetensors
+│   │   ├── Hermione_Granger.safetensors
+│   │   ├── jordan_torres_v2_xl.safetensors
+│   │   ├── keira_lora_sdxl_v1-000008.safetensors
+│   │   └── TaylorSwiftSDXL.safetensors
 │   ├── sam
 │   │   ├── sam_vit_h_4b8939.pth
 │   │   └── xl1.pt
@@ -160,34 +185,40 @@ OMG
 └── inference_lora.py
 ```
 
-If you use `YoloWorld`, put `yolo-world.pt` to `/tmp/cache/yolo_world/l/yolo-world.pt`. And put `ViT-B-32.pt` (download from [openai]( https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt )) to `~/.cache/clip/ViT-B-32.pt`
+
+Put `ViT-B-32.pt` (download from [openai]( https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt )) to `~/.cache/clip/ViT-B-32.pt`.
+If using `YoloWorld`, put `yolo-world.pt` to `/tmp/cache/yolo_world/l/yolo-world.pt`.
 
 Or you can manually set the checkpoint path as follows:
 
-For OMG + LoRA:
 ```
 python inference_lora.py  \
 --pretrained_sdxl_model <path to stable-diffusion-xl-base-1.0> \
 --controlnet_checkpoint <path to controlnet-openpose-sdxl-1.0> \
+--efficientViT_checkpoint <path to efficientViT-SAM-XL1> \
 --dino_checkpoint <path to GroundingDINO> \
 --sam_checkpoint <path to sam> \
---lora_path <Lora path for character1|Lora path for character1>
+--lora_path <Lora path to character1|Lora path to character1> \
+--style_lora <Path to style LoRA>
 ```
 For OMG + InstantID:
 ```
 python inference_instantid.py  \
 --pretrained_model <path to stable-diffusion-xl-base-1.0> \
 --controlnet_path <path to InstantID controlnet> \
---face_adapter_path <path to InstantID face adapter>
+--face_adapter_path <path to InstantID face adapter> \
+--efficientViT_checkpoint <path to efficientViT-SAM-XL1> \
 --dino_checkpoint <path to GroundingDINO> \
 --sam_checkpoint <path to sam> \
---antelopev2_path <path to antelopev2>
+--antelopev2_path <path to antelopev2> \
+--style_lora <Path to style LoRA>
 ```
 
 ## :computer: Usage
 
-### 1: OMG with LoRA
+### 1: OMG + LoRA
 The &lt;TOK&gt; for `Harry_Potter.safetensors` is `Harry Potter` and for `Hermione_Granger.safetensors` is `Hermione Granger`.
+Visual comprehension 
 ```
 python inference_lora.py \
     --prompt <prompt for the two person> \
@@ -200,10 +231,31 @@ For example:
 python inference_lora.py \
     --prompt "Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed." \
     --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
-    --prompt_rewrite '[Close-up photo of the Harry Potter in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]|[Close-up photo of the Hermione Granger in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]' \
+    --prompt_rewrite '[Close-up photo of the Chris Evans in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]|[Close-up photo of the TaylorSwift in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]' \
     --lora_path './checkpoint/lora/chris-evans.safetensors|./checkpoint/lora/TaylorSwiftSDXL.safetensors'
 ```
-### 2: OMG with InstantID
+For OMG + LoRA + ControlNet:
+```
+python inference_lora.py \
+    --prompt "Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed." \
+    --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
+    --prompt_rewrite '[Close-up photo of the Chris Evans in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]|[Close-up photo of the TaylorSwift in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]' \
+    --lora_path './checkpoint/lora/chris-evans.safetensors|./checkpoint/lora/TaylorSwiftSDXL.safetensors' \
+    --spatial_condition './example/pose.png' \
+    --controlnet_checkpoint './checkpoint/controlnet-openpose-sdxl-1.0'
+```
+
+For OMG + LoRA + Style:
+```
+python inference_lora.py \
+    --prompt "Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed, Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch." \
+    --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
+    --prompt_rewrite '[Close-up photo of the Chris Evans in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed, Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch.]-*-[noisy, blurry, soft, deformed, ugly]|[Close-up photo of the TaylorSwift in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed, Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch.]-*-[noisy, blurry, soft, deformed, ugly]' \
+    --lora_path './checkpoint/lora/chris-evans.safetensors|./checkpoint/lora/TaylorSwiftSDXL.safetensors' \
+    --style_lora './checkpoint/style/Anime_Sketch_SDXL.safetensors' 
+```
+
+### 2: OMG + InstantID
 
 ```
 python inference_instantid.py \
