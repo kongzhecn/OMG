@@ -262,14 +262,14 @@ python inference_lora.py \
 python inference_instantid.py \
     --prompt <prompt for the two person> \
     --negative_prompt <negative prompt> \
-    --prompt_rewrite "[<prompt for person 1>]-*-[<negative prompt>]-*-<path to reference image1>|[<prompt for person 2>]-*-[negative prompt]-*-<path to reference image2>",
+    --prompt_rewrite "[<prompt for person 1>]-*-[<negative prompt>]-*-<path to reference image1>|[<prompt for person 2>]-*-[negative prompt]-*-<path to reference image2>"
 ```
 For example:
 ```
 python inference_instantid.py \
     --prompt 'Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed.' \
     --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
-    --prompt_rewrite '[Close-up photo of the a man, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/musk_resize.jpeg|[Close-up photo of the a man, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/yann-lecun_resize.jpg'
+    --prompt_rewrite '[Close-up photo of the a man, 35mm photograph, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/chris-evans.jpg|[Close-up photo of the a woman, 35mm photograph, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/TaylorSwift.png'
 ```
 
 ### 3. Local gradio demo with OMG + LoRA
