@@ -218,7 +218,8 @@ python inference_instantid.py  \
 
 ### 1: OMG + LoRA
 The &lt;TOK&gt; for `Harry_Potter.safetensors` is `Harry Potter` and for `Hermione_Granger.safetensors` is `Hermione Granger`.
-Visual comprehension 
+
+For visual comprehension, you can set `--segment_type yoloworld` for `YoloWorld + EfficientViT SAM`, or `--segment_type GroundingDINO` for `GroundingDINO + SAM`. 
 ```
 python inference_lora.py \
     --prompt <prompt for the two person> \
