@@ -213,20 +213,21 @@ def build_model_sd(pretrained_model, controlnet_path, device, prompts):
                                                              variant="fp16").to(device)
     return pipe, controller, pipe_concept
 
-def build_model_lora(pipe_concept, lora_paths, style_path, condition, args):
+def build_model_lora(pipe_concept, lora_paths, style_path, condition, args, pipe):
     pipe_list = []
     if condition == "Human pose":
         controlnet = ControlNetModel.from_pretrained(args.openpose_checkpoint, torch_dtype=torch.float16).to(device)
-        pipe_concept.controlnet = controlnet
+        pipe.controlnet = controlnet
     elif condition == "Canny Edge":
-        controlnet = ControlNetModel.from_pretrained(args.canny_checkpoint, torch_dtype=torch.float16).to(device)
-        pipe_concept.controlnet = controlnet
+        controlnet = ControlNetModel.from_pretrained(args.canny_checkpoint, torch_dtype=torch.float16, variant="fp16").to(device)
+        pipe.controlnet = controlnet
     elif condition == "Depth":
         controlnet = ControlNetModel.from_pretrained(args.depth_checkpoint, torch_dtype=torch.float16).to(device)
-        pipe_concept.controlnet = controlnet
+        pipe.controlnet = controlnet
 
     if style_path is not None and os.path.exists(style_path):
         pipe_concept.load_lora_weights(style_path, weight_name="pytorch_lora_weights.safetensors", adapter_name='style')
+        pipe.load_lora_weights(style_path, weight_name="pytorch_lora_weights.safetensors", adapter_name='style')
 
     for lora_path in lora_paths.split('|'):
         adapter_name = lora_path.split('/')[-1].split('.')[0]
@@ -336,7 +337,8 @@ def main(device, segment_type):
             path1 = lorapath_man[man]
             path2 = lorapath_woman[woman]
             pipe_concept.unload_lora_weights()
-            pipe_list = build_model_lora(pipe_concept, path1 + "|" + path2, lorapath_styles[style], condition, args)
+            pipe.unload_lora_weights()
+            pipe_list = build_model_lora(pipe_concept, path1 + "|" + path2, lorapath_styles[style], condition, args, pipe)
 
             if lorapath_styles[style] is not None and os.path.exists(lorapath_styles[style]):
                 styleL = True
