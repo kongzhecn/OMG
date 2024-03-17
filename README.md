@@ -124,7 +124,7 @@ For `InstantID + OMG` download:
 #### 2. For Visual comprehension, you can choose "YoloWorld + EfficientViT SAM" or "GroundingDINO + SAM".
 
 For `YoloWorld + EfficientViT SAM`:
-[EfficientViT-SAM-XL1](https://github.com/mit-han-lab/efficientvit/blob/master/applications/sam.md), [yolo-world](https://huggingface.co/Fucius/OMG/blob/main/yolo-world.pt).
+[EfficientViT-SAM-XL1](https://huggingface.co/han-cai/efficientvit-sam/resolve/main/xl1.pt), [yolo-world](https://huggingface.co/Fucius/OMG/blob/main/yolo-world.pt).
 
 For `GroundingDINO + SAM`:
 [GroundingDINO](https://huggingface.co/ShilongLiu/GroundingDINO), [SAM](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth).
