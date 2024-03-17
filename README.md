@@ -133,11 +133,13 @@ For `GroundingDINO + SAM`:
 
 For `Character LoRAs for man`:
 [Chris Evans](https://civitai.com/models/253793?modelVersionId=286084),
+[Gleb Savchenko](https://civitai.com/models/309562/gleb-savchenko-dancing-with-the-stars-sdxl),
 [Harry Potter](https://huggingface.co/Fucius/OMG/blob/main/lora/Harry_Potter.safetensors),
 [Jordan Torres](https://civitai.com/models/132387/jordan-torres-15-sdxl?modelVersionId=366964).
 
 For `Character LoRAs for woman`:
 [Taylor Swift](https://civitai.com/models/164284/taylor-swift?modelVersionId=185041),
+[Jennifer Lawrence](https://civitai.com/models/122657/jennifer-lawrence-sdxl),
 [Hermione Granger](https://huggingface.co/Fucius/OMG/blob/main/lora/Hermione_Granger.safetensors),
 [Keira Knightley](https://civitai.com/models/172431/keira-knightley-sdxl?modelVersionId=193658).
 
