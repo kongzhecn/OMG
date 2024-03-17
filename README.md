@@ -167,7 +167,8 @@ OMG
 │   ├── controlnet-depth-sdxl-1.0
 │   ├── dpt-hybrid-midas
 │   ├── style
-│   │   ├── EldritchComicsXL1.2.safetensors
+│   │   ├── EldritchPaletteKnife.safetensors
+│   │   ├── Cinematic Hollywood Film.safetensors
 │   │   └── Anime_Sketch_SDXL.safetensors
 │   ├── InstantID
 │   ├── GroundingDINO
@@ -177,6 +178,8 @@ OMG
 │   │   ├── Hermione_Granger.safetensors
 │   │   ├── jordan_torres_v2_xl.safetensors
 │   │   ├── keira_lora_sdxl_v1-000008.safetensors
+│   │   ├── lawrence_dh128_v1-step00012000.safetensors
+│   │   ├── Gleb-Savchenko_Liam-Hemsworth.safetensors
 │   │   └── TaylorSwiftSDXL.safetensors
 │   ├── sam
 │   │   ├── sam_vit_h_4b8939.pth

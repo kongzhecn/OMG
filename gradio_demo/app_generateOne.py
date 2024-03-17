@@ -498,8 +498,8 @@ def main(device, segment_type):
 
         # character choose
         with gr.Row():
-            man = gr.Dropdown(label="Character 1 selection", choices=CHARACTER_MAN_NAMES, value="Harry Potter (identifier: Harry Potter)")
-            woman = gr.Dropdown(label="Character 2 selection", choices=CHARACTER_WOMAN_NAMES, value="Hermione Granger (identifier: Hermione Granger)")
+            man = gr.Dropdown(label="Character 1 selection", choices=CHARACTER_MAN_NAMES, value="Chris Evans (identifier: Chris Evans)")
+            woman = gr.Dropdown(label="Character 2 selection", choices=CHARACTER_WOMAN_NAMES, value="Taylor Swift (identifier: TaylorSwift)")
             resolution = gr.Dropdown(label="Image Resolution (width*height)", choices=resolution_list, value="1024*1024")
             condition = gr.Dropdown(label="Input condition type", choices=condition_list, value="None")
             style = gr.Dropdown(label="style", choices=STYLE_NAMES, value="None")
@@ -507,10 +507,10 @@ def main(device, segment_type):
         with gr.Row():
             local_prompt1 = gr.Textbox(label="Character1_prompt",
                                 info="Describe the Character 1, this prompt should include the identifier of character 1",
-                                value="Close-up photo of the Harry Potter, 35mm photograph, film, professional, 4k, highly detailed.")
+                                value="Close-up photo of the Chris Evans, 35mm photograph, film, professional, 4k, highly detailed.")
             local_prompt2 = gr.Textbox(label="Character2_prompt",
                                        info="Describe the Character 2, this prompt should include the identifier of character2",
-                                       value="Close-up photo of the Hermione Granger, 35mm photograph, film, professional, 4k, highly detailed.")
+                                       value="Close-up photo of the TaylorSwift, 35mm photograph, film, professional, 4k, highly detailed.")
 
         man.change(get_local_value_man, man, local_prompt1)
         woman.change(get_local_value_woman, woman, local_prompt2)
@@ -520,7 +520,7 @@ def main(device, segment_type):
             prompt = gr.Textbox(label="Prompt 1",
                                 info="Give a simple prompt to describe the first image content",
                                 placeholder="Required",
-                                value="close-up shot, photography, the cool man and beautiful woman as they accidentally discover a mysterious island while on vacation by the sea, facing the camera smiling")
+                                value="close-up shot, photography, a man and a woman on the street, facing the camera smiling")
 
 
         with gr.Accordion(open=False, label="Advanced Options"):
