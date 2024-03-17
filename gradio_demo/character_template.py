@@ -52,9 +52,14 @@ style_list = [
         "path": "./checkpoint/style/Anime_Sketch_SDXL.safetensors",
     },
     {
-        "name": "Comic style",
-        "prompt": "comic book style, ",
-        "path": "../checkpoint/style/EldritchComicsXL1.2.safetensors",
+        "name": "Oil Painting Style",
+        "prompt": "palette knife painting, ",
+        "path": "./checkpoint/style/EldritchPaletteKnife.safetensors",
+    },
+    {
+        "name": "Cinematic Photography Style",
+        "prompt": "Cinematic Hollywood Film Style, ",
+        "path": "./checkpoint/style/Cinematic Hollywood Film.safetensors",
     }
 ]
 

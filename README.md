@@ -151,7 +151,8 @@ For `Character LoRAs for woman`:
 #### 5. (Optional) If using Style LoRAs, download:
 
 [Anime Sketch Style](https://civitai.com/models/202764/anime-sketch-style-sdxl-and-sd15?modelVersionId=258108),
-[Comic book Style](https://civitai.com/models/262880/eldritch-comics-comic-book-style-illustration?modelVersionId=305491).
+[Oil Painting Style](https://civitai.com/models/336656?modelVersionId=376999),
+[Cinematic Photography Style](https://civitai.com/models/214956/cinematic-photography-style-xl).
 
 ### 2) Preparation
 
