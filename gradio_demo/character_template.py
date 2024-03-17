@@ -50,6 +50,11 @@ style_list = [
         "name": "Anime sketch style",
         "prompt": "Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch, ",
         "path": "./checkpoint/style/Anime_Sketch_SDXL.safetensors",
+    },
+    {
+        "name": "Comic style",
+        "prompt": "comic book style, ",
+        "path": "../checkpoint/style/EldritchComicsXL1.2.safetensors",
     }
 ]
 

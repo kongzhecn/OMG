@@ -13,7 +13,7 @@ import copy
 import argparse
 from diffusers.utils import load_image
 import cv2
-from PIL import Image
+from PIL import Image, ImageOps
 from transformers import DPTFeatureExtractor, DPTForDepthEstimation
 from controlnet_aux import OpenposeDetector
 from controlnet_aux.open_pose.body import Body
@@ -263,7 +263,31 @@ def build_dino_segment_model(ckpt_repo_id, sam_checkpoint):
     sam_predictor = SamPredictor(sam)
     return groundingdino_model, sam_predictor
 
+def resize_and_center_crop(image, output_size=(1024, 576)):
+    width, height = image.size
+    aspect_ratio = width / height
+    new_height = output_size[1]
+    new_width = int(aspect_ratio * new_height)
 
+    resized_image = image.resize((new_width, new_height), Image.LANCZOS)
+
+    if new_width < output_size[0] or new_height < output_size[1]:
+        padding_color = "gray"
+        resized_image = ImageOps.expand(resized_image,
+                                        ((output_size[0] - new_width) // 2,
+                                         (output_size[1] - new_height) // 2,
+                                         (output_size[0] - new_width + 1) // 2,
+                                         (output_size[1] - new_height + 1) // 2),
+                                        fill=padding_color)
+
+    left = (resized_image.width - output_size[0]) / 2
+    top = (resized_image.height - output_size[1]) / 2
+    right = (resized_image.width + output_size[0]) / 2
+    bottom = (resized_image.height + output_size[1]) / 2
+
+    cropped_image = resized_image.crop((left, top, right, bottom))
+
+    return cropped_image
 
 def main(device, segment_type):
     pipe, controller, pipe_concept = build_model_sd(args.pretrained_sdxl_model, args.openpose_checkpoint, device, prompts_tmp)
@@ -282,7 +306,8 @@ def main(device, segment_type):
                        "832*1216",
                        "768*1344",
                        "728*1440"]
-
+    ratio_list = [1440 / 728, 1344 / 768, 1216 / 832, 1152 / 896, 1024 / 1024, 896 / 1152, 832 / 1216, 768 / 1344,
+                  728 / 1440]
     condition_list = ["None",
                       "Human pose",
                       "Canny Edge",
@@ -363,14 +388,40 @@ def main(device, segment_type):
                     if styleL:
                         p = styles[style] + p
                     input_prompt.append([p.replace("{prompt}", prompt), p.replace("{prompt}", prompt)])
-                    input_prompt.append([(styles[style] + local_prompt1, character_man.get(man)[1]), (styles[style] + local_prompt2, character_woman.get(woman)[1])])
+                    if styleL:
+                        input_prompt.append([(styles[style] + local_prompt1, character_man.get(man)[1]),
+                                             (styles[style] + local_prompt2, character_woman.get(woman)[1])])
+                    else:
+                        input_prompt.append([(local_prompt1, character_man.get(man)[1]),
+                                             (local_prompt2, character_woman.get(woman)[1])])
 
                     if condition == 'Human pose' and condition_img is not None:
-                        spatial_condition = get_humanpose(condition_img).resize((width, height))
+                        index = ratio_list.index(
+                            min(ratio_list, key=lambda x: abs(x - condition_img.shape[1] / condition_img.shape[0])))
+                        resolution = resolution_list[index]
+                        width, height = int(resolution.split("*")[0]), int(resolution.split("*")[1])
+                        kwargs['height'] = height
+                        kwargs['width'] = width
+                        condition_img = resize_and_center_crop(Image.fromarray(condition_img), (width, height))
+                        spatial_condition = get_humanpose(condition_img)
                     elif condition == 'Canny Edge' and condition_img is not None:
-                        spatial_condition = get_cannyedge(condition_img).resize((width, height))
+                        index = ratio_list.index(
+                            min(ratio_list, key=lambda x: abs(x - condition_img.shape[1] / condition_img.shape[0])))
+                        resolution = resolution_list[index]
+                        width, height = int(resolution.split("*")[0]), int(resolution.split("*")[1])
+                        kwargs['height'] = height
+                        kwargs['width'] = width
+                        condition_img = resize_and_center_crop(Image.fromarray(condition_img), (width, height))
+                        spatial_condition = get_cannyedge(condition_img)
                     elif condition == 'Depth' and condition_img is not None:
-                        spatial_condition = get_depth(condition_img).resize((width, height))
+                        index = ratio_list.index(
+                            min(ratio_list, key=lambda x: abs(x - condition_img.shape[1] / condition_img.shape[0])))
+                        resolution = resolution_list[index]
+                        width, height = int(resolution.split("*")[0]), int(resolution.split("*")[1])
+                        kwargs['height'] = height
+                        kwargs['width'] = width
+                        condition_img = resize_and_center_crop(Image.fromarray(condition_img), (width, height))
+                        spatial_condition = get_depth(condition_img)
                     else:
                         spatial_condition = None
 
