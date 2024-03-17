@@ -166,6 +166,7 @@ OMG
 │   ├── controlnet-depth-sdxl-1.0
 │   ├── dpt-hybrid-midas
 │   ├── style
+│   │   ├── EldritchComicsXL1.2.safetensors
 │   │   └── Anime_Sketch_SDXL.safetensors
 │   ├── InstantID
 │   ├── GroundingDINO
