@@ -31,7 +31,7 @@
 
 ## :label: Change Log 
 - [2023/3/18] 🔥 We release the [technical report]().
-- [2023/3/17] 🔥 We release the source code and gradio demo of OMG.
+- [2023/3/18] 🔥 We release the source code and gradio demo of OMG.
 
 ## 🔆 Introduction
 ### 1. OMG + LoRA (ID with multiple images)
