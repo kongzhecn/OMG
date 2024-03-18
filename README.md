@@ -22,7 +22,9 @@
   <img src="assets/teaser.png">
 </p>
 
+> **Introduction of OMG:** A tool for high-quality multi-character image generation.
 
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/5BI_a7nTb8Q/0.jpg)](https://youtu.be/5BI_a7nTb8Q)
 
 > **Trailor Demo:** A short trailor "Home Defense" created by using OMG + SVD.
 
