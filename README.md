@@ -32,7 +32,7 @@
 
 
 ## :label: Change Log 
-- [2023/3/19] 🔥 We release the [technical report](https://arxiv.org/abs/2403.10983).
+- [2023/3/19] 🔥 We release the [technical report](https://arxiv.org/abs/2403.10983) and [Hugging Face demo](https://huggingface.co/spaces/Fucius/OMG)
 - [2023/3/18] 🔥 We release the source code and gradio demo of OMG.
 
 ## 🔆 Introduction
