@@ -9,7 +9,7 @@
 
 
 <a href='https://kongzhecn.github.io/omg-project/'><img src='https://img.shields.io/badge/Project-Page-green'></a>
-<a href='xxx'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
+<a href='https://arxiv.org/abs/2403.10983'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
 [![GitHub](https://img.shields.io/github/stars/kongzhecn/OMG?style=social)](https://github.com/kongzhecn/OMG)
 
 <a href='https://huggingface.co/spaces/xxx'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue'></a>
@@ -32,7 +32,7 @@
 
 
 ## :label: Change Log 
-- [2023/3/18] 🔥 We release the [technical report]().
+- [2023/3/19] 🔥 We release the [technical report](https://arxiv.org/abs/2403.10983).
 - [2023/3/18] 🔥 We release the source code and gradio demo of OMG.
 
 ## 🔆 Introduction
