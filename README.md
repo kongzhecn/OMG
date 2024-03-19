@@ -12,7 +12,7 @@
 <a href='https://arxiv.org/abs/2403.10983'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
 [![GitHub](https://img.shields.io/github/stars/kongzhecn/OMG?style=social)](https://github.com/kongzhecn/OMG)
 
-<a href='https://huggingface.co/spaces/xxx'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue'></a>
+<a href='https://huggingface.co/spaces/Fucius/OMG'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue'></a>
 
 </div>
 
