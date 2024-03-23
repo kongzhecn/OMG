@@ -567,8 +567,8 @@ def main(device, segment_type):
                         guidance_scale=cfg_scale,
                         **kwargs)
 
-                # return [image[1], spatial_condition]
-                return image
+                return [image[1], spatial_condition]
+
 
     with gr.Blocks(css=css) as demo:
         # description
@@ -577,7 +577,7 @@ def main(device, segment_type):
 
         with gr.Row():
             gallery = gr.Image(label="Generated Images", height=512, width=512)
-            gallery1 = gr.Image(label="Generated Images", height=512, width=512)
+            gallery1 = gr.Image(label="Generated Conditions", height=512, width=512)
             usage_tips = gr.Markdown(label="Usage tips of OMG", value=tips, visible=False)
 
 
