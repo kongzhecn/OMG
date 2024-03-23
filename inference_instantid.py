@@ -75,12 +75,13 @@ def sample_image(pipe,
     generator=None,
     concept_models=None,
     num_inference_steps=50,
-    guidance_scale=7.5,
+    guidance_scale=3,
     controller=None,
     face_app=None,
     image=None,
     stage=None,
     region_masks=None,
+    controlnet_conditioning_scale=None,
     **extra_kargs
 ):
 
@@ -102,6 +103,7 @@ def sample_image(pipe,
         image=image_condition,
         face_app=face_app,
         stage=stage,
+        controlnet_conditioning_scale=controlnet_conditioning_scale,
         region_masks=region_masks,
         **extra_kargs).images
     return images
@@ -190,7 +192,7 @@ def predict_mask(segmentmodel, sam, image, TEXT_PROMPT, segmentType, confidence 
 
     return masks
 
-def build_model_sd(pretrained_model, controlnet_path, face_adapter, device, prompts, antelopev2_path, width, height, style_lora):
+def build_model_sd(pretrained_model, controlnet_path, face_adapter, device, prompts, antelopev2_path, width, height, style_lora, condition_checkpoint, adapter_ratio):
     controlnet = ControlNetModel.from_pretrained(controlnet_path, torch_dtype=torch.float16)
     pipe = InstantidMultiConceptPipeline.from_pretrained(
         pretrained_model, controlnet=controlnet, torch_dtype=torch.float16, variant="fp16").to(device)
@@ -207,9 +209,13 @@ def build_model_sd(pretrained_model, controlnet_path, face_adapter, device, prom
         torch_dtype=torch.float16
     )
     pipe_concept.load_ip_adapter_instantid(face_adapter)
-    pipe_concept.set_ip_adapter_scale(0.8)
+    pipe_concept.set_ip_adapter_scale(adapter_ratio)
     pipe_concept.to(device)
     pipe_concept.image_proj_model.to(pipe_concept._execution_device)
+
+    if condition_checkpoint is not None and os.path.exists(condition_checkpoint):
+        t2i_controlnet = ControlNetModel.from_pretrained(condition_checkpoint, torch_dtype=torch.float16).to(device)
+        pipe.controlnet2 = t2i_controlnet
 
     if style_lora is not None and os.path.exists(style_lora):
         pipe.load_lora_weights(style_lora, weight_name="pytorch_lora_weights.safetensors", adapter_name='style')
@@ -250,8 +256,10 @@ def prepare_text(prompt, region_prompts):
 
 def parse_args():
     parser = argparse.ArgumentParser('', add_help=False)
-    parser.add_argument('--pretrained_model', default='./checkpoint/stable-diffusion-xl-base-1.0', type=str)
+    parser.add_argument('--pretrained_model', default='./checkpoint/YamerMIX_v8', type=str)
     parser.add_argument('--controlnet_path', default='./checkpoint/InstantID/ControlNetModel', type=str)
+    parser.add_argument('--spatial_condition', default='', type=str)
+    parser.add_argument('--t2i_controlnet_path', default='', type=str)
     parser.add_argument('--face_adapter_path', default='./checkpoint/InstantID/ip-adapter.bin', type=str)
     parser.add_argument('--efficientViT_checkpoint', default='./checkpoint/sam/xl1.pt', type=str)
     parser.add_argument('--dino_checkpoint', default='./checkpoint/GroundingDINO', type=str)
@@ -272,6 +280,10 @@ def parse_args():
     parser.add_argument('--suffix', default='', type=str)
     parser.add_argument('--segment_type', default='yoloworld', help='GroundingDINO or yoloworld', type=str)
     parser.add_argument('--style_lora', default='', type=str)
+    parser.add_argument('--cfg_scale', default=3.0, type=float)
+    parser.add_argument('--IdentityNet_rate', default=0.8, type=float)
+    parser.add_argument('--adapter_ratio', default=0.8, type=float)
+    parser.add_argument('--controlNet_ratio', default=0.8, type=float)
     return parser.parse_args()
 
 
@@ -282,14 +294,23 @@ if __name__ == '__main__':
 
     prompts_tmp = copy.deepcopy(prompts)
 
+    if args.spatial_condition is not None and os.path.exists(args.spatial_condition):
+        spatial_condition = Image.open(args.spatial_condition).convert('RGB')
+        spatial_condition = spatial_condition.resize((1024, 1024))
+        print('use pose condition')
+    else:
+        spatial_condition = None
+
     width, height = 1024, 1024
     kwargs = {
         'height': height,
         'width': width,
+        't2i_image': spatial_condition,
+        't2i_controlnet_conditioning_scale': args.controlNet_ratio,
     }
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    pipe, controller, pipe_concepts, face_app = build_model_sd(args.pretrained_model, args.controlnet_path, args.face_adapter_path, device, prompts_tmp, args.antelopev2_path, width//32, height//32, args.style_lora)
+    pipe, controller, pipe_concepts, face_app = build_model_sd(args.pretrained_model, args.controlnet_path, args.face_adapter_path, device, prompts_tmp, args.antelopev2_path, width//32, height//32, args.style_lora, args.t2i_controlnet_path, args.adapter_ratio)
     if args.segment_type == 'GroundingDINO':
         detect_model, sam = build_dino_segment_model(args.dino_checkpoint, args.sam_checkpoint)
     else:
@@ -311,18 +332,20 @@ if __name__ == '__main__':
         generator=torch.Generator(device).manual_seed(args.seed),
         controller=controller,
         face_app=face_app,
+        controlnet_conditioning_scale=args.IdentityNet_rate,
         stage=1,
+        guidance_scale=args.cfg_scale,
         **kwargs)
 
     controller.reset()
 
     if pipe.tokenizer("man")["input_ids"][1] in pipe.tokenizer(args.prompt)["input_ids"][1:-1]:
-        mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence=0.2, threshold=0.5)
+        mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence=0.1, threshold=0.5)
     else:
         mask1 = None
 
     if pipe.tokenizer("woman")["input_ids"][1] in pipe.tokenizer(args.prompt)["input_ids"][1:-1]:
-        mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence=0.2, threshold=0.5)
+        mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence=0.1, threshold=0.5)
     else:
         mask2 = None
 
@@ -340,7 +363,9 @@ if __name__ == '__main__':
             face_app=face_app,
             image = face_kps,
             stage=2,
+            controlnet_conditioning_scale=args.IdentityNet_rate,
             region_masks=[mask1, mask2],
+            guidance_scale=args.cfg_scale,
             **kwargs)
 
 

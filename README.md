@@ -120,6 +120,7 @@ Download [stable-diffusion-xl-base-1.0](https://huggingface.co/stabilityai/stabl
 [controlnet-openpose-sdxl-1.0](https://huggingface.co/thibaud/controlnet-openpose-sdxl-1.0).
 
 For `InstantID + OMG` download:
+[wangqixun/YamerMIX_v8](https://huggingface.co/wangqixun/YamerMIX_v8), 
 [InstantID](https://huggingface.co/InstantX/InstantID/tree/main), 
 [antelopev2](https://drive.google.com/file/d/18wEUfMNohBJ4K3Ly5wpTejPfDzp-8fI8/view?usp=sharing),
 
@@ -163,36 +164,48 @@ For `Character LoRAs for woman`:
 Put the models under `checkpoint` as follow:
 ```angular2html
 OMG
+├── assets
 ├── checkpoint
 │   ├── antelopev2
+│   │   └── models
+│   │       └── antelopev2
+│   │           ├── 1k3d68.onnx
+│   │           ├── 2d106det.onnx
+│   │           ├── genderage.onnx
+│   │           ├── glintr100.onnx
+│   │           └── scrfd_10g_bnkps.onnx
 │   ├── ControlNet
-│   ├── controlnet-openpose-sdxl-1.0
 │   ├── controlnet-canny-sdxl-1.0
 │   ├── controlnet-depth-sdxl-1.0
+│   ├── controlnet-openpose-sdxl-1.0
 │   ├── dpt-hybrid-midas
-│   ├── style
-│   │   ├── EldritchPaletteKnife.safetensors
-│   │   ├── Cinematic Hollywood Film.safetensors
-│   │   └── Anime_Sketch_SDXL.safetensors
-│   ├── InstantID
 │   ├── GroundingDINO
+│   ├── InstantID
 │   ├── lora
-│   │   ├── chris-evans.safetensors
-│   │   ├── Harry_Potter.safetensors
-│   │   ├── Hermione_Granger.safetensors
-│   │   ├── jordan_torres_v2_xl.safetensors
-│   │   ├── keira_lora_sdxl_v1-000008.safetensors
-│   │   ├── lawrence_dh128_v1-step00012000.safetensors
-│   │   ├── Gleb-Savchenko_Liam-Hemsworth.safetensors
-│   │   └── TaylorSwiftSDXL.safetensors
+│   │   ├── chris-evans.safetensors 
+│   │   ├── Gleb-Savchenko_Liam-Hemsworth.safetensors 
+│   │   ├── Harry_Potter.safetensors 
+│   │   ├── Hermione_Granger.safetensors 
+│   │   ├── jordan_torres_v2_xl.safetensors 
+│   │   ├── keira_lora_sdxl_v1-000008.safetensors 
+│   │   ├── lawrence_dh128_v1-step00012000.safetensors 
+│   │   └── TaylorSwiftSDXL.safetensors 
 │   ├── sam
 │   │   ├── sam_vit_h_4b8939.pth
-│   │   └── xl1.pt
-│   └── stable-diffusion-xl-base-1.0
+│   │   └── xl1.pt 
+│   ├── stable-diffusion-xl-base-1.0 
+│   ├── style
+│   │   ├── Anime_Sketch_SDXL.safetensors 
+│   │   ├── Cinematic Hollywood Film.safetensors
+│   │   └── EldritchPaletteKnife.safetensors 
+│   └── YamerMIX_v8 
+├── example
 ├── gradio_demo
-├── src
 ├── inference_instantid.py
-└── inference_lora.py
+├── inference_lora.py
+├── README.md
+├── requirements.txt
+└── src
 ```
 
 
@@ -245,7 +258,7 @@ python inference_lora.py \
     --prompt_rewrite '[Close-up photo of the Chris Evans in surprised expressions as he wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]|[Close-up photo of the TaylorSwift in surprised expressions as she wear Hogwarts uniform, 35mm photograph, film, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]' \
     --lora_path './checkpoint/lora/chris-evans.safetensors|./checkpoint/lora/TaylorSwiftSDXL.safetensors'
 ```
-For OMG + LoRA + ControlNet:
+For OMG + LoRA + ControlNet (Human Pose):
 ```
 python inference_lora.py \
     --prompt "Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed." \
@@ -282,6 +295,36 @@ python inference_instantid.py \
     --prompt_rewrite '[Close-up photo of the a man, 35mm photograph, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/chris-evans.jpg|[Close-up photo of the a woman, 35mm photograph, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/TaylorSwift.png'
 ```
 
+For OMG + InstantID + ControlNet (Human Pose):
+```
+python inference_instantid.py \
+    --prompt 'Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed.' \
+    --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
+    --prompt_rewrite '[Close-up photo of the a man, 35mm photograph, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/chris-evans.jpg|[Close-up photo of the a woman, 35mm photograph, professional, 4k, highly detailed.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/TaylorSwift.png' \
+    --spatial_condition './example/pose.png' \
+    --t2i_controlnet_path './checkpoint/controlnet-openpose-sdxl-1.0'
+```
+
+For OMG + InstantID + Style:
+```
+python inference_instantid.py \
+    --prompt 'Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed, Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch.' \
+    --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
+    --prompt_rewrite '[Close-up photo of the a man, 35mm photograph, professional, 4k, highly detailed, Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/chris-evans.jpg|[Close-up photo of the a woman, 35mm photograph, professional, 4k, highly detailed, Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/TaylorSwift.png' \
+    --style_lora './checkpoint/style/Anime_Sketch_SDXL.safetensors' 
+```
+
+For OMG + InstantID + Style + ControlNet (Human Pose):
+```
+python inference_instantid.py \
+    --prompt 'Close-up photo of the happy smiles on the faces of the cool man and beautiful woman as they leave the island with the treasure, sail back to the vacation beach, and begin their love story, 35mm photograph, film, professional, 4k, highly detailed, Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch.' \
+    --negative_prompt 'noisy, blurry, soft, deformed, ugly' \
+    --prompt_rewrite '[Close-up photo of the a man, 35mm photograph, professional, 4k, highly detailed, Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/chris-evans.jpg|[Close-up photo of the a woman, 35mm photograph, professional, 4k, highly detailed, Pencil_Sketch:1.2, messy lines, greyscale, traditional media, sketch.]-*-[noisy, blurry, soft, deformed, ugly]-*-./example/TaylorSwift.png' \
+    --style_lora './checkpoint/style/Anime_Sketch_SDXL.safetensors' \
+    --spatial_condition './example/pose.png' \
+    --t2i_controlnet_path './checkpoint/controlnet-openpose-sdxl-1.0'
+```
+
 ### 3. Local gradio demo with OMG + LoRA
 If you choose `YoloWorld + EfficientViT SAM`:
 ```
@@ -291,4 +334,17 @@ For `GroundingDINO + SAM`:
 ```
 python gradio_demo/app.py --segment_type GroundingDINO
 ```
+
+
+### 4. Local gradio demo with OMG + InstantID
+
+If you choose `YoloWorld + EfficientViT SAM`:
+```
+python gradio_demo/app_instantID.py --segment_type yoloworld
+```
+For `GroundingDINO + SAM`:
+```
+python gradio_demo/app_instantID.py --segment_type GroundingDINO
+```
+
 Connect to the public URL displayed after the startup process is completed.

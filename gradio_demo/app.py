@@ -438,13 +438,13 @@ def main(device, segment_type):
 
                     controller.reset()
                     if pipe.tokenizer("man")["input_ids"][1] in pipe.tokenizer(args.prompt)["input_ids"][1:-1]:
-                        mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence=0.15,
+                        mask1 = predict_mask(detect_model, sam, image[0], 'man', args.segment_type, confidence=0.10,
                                              threshold=0.5)
                     else:
                         mask1 = None
 
                     if pipe.tokenizer("woman")["input_ids"][1] in pipe.tokenizer(args.prompt)["input_ids"][1:-1]:
-                        mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence=0.15,
+                        mask2 = predict_mask(detect_model, sam, image[0], 'woman', args.segment_type, confidence=0.10,
                                              threshold=0.5)
                     else:
                         mask2 = None

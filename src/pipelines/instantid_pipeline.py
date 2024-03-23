@@ -254,6 +254,8 @@ class InstantidMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
         face_app=None,
         stage=None,
         region_masks=None,
+        t2i_image=None,
+        t2i_controlnet_conditioning_scale: Union[float, List[float]] = 1.0,
         **kwargs,
     ):
         # revise_regionally_controlnet_forward(self.unet, controller)
@@ -425,6 +427,20 @@ class InstantidMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
             height = height or self.unet.config.sample_size * self.vae_scale_factor
             width = width or self.unet.config.sample_size * self.vae_scale_factor
 
+        if t2i_image is not None:
+            t2i_image = self.prepare_image(
+                image=t2i_image,
+                width=width,
+                height=height,
+                batch_size=batch_size * num_images_per_prompt,
+                num_images_per_prompt=num_images_per_prompt,
+                device=device,
+                dtype=controlnet.dtype,
+                do_classifier_free_guidance=self.do_classifier_free_guidance,
+                guess_mode=guess_mode,
+            )
+            height, width = t2i_image.shape[-2:]
+
         # 5. Prepare timesteps
         self.scheduler.set_timesteps(num_inference_steps, device=device)
         timesteps = self.scheduler.timesteps
@@ -555,17 +571,49 @@ class InstantidMultiConceptPipeline(StableDiffusionXLControlNetPipeline):
                         controlnet_cond_scale = controlnet_cond_scale[0]
                     cond_scale = controlnet_cond_scale * controlnet_keep[i]
 
+                if t2i_image is not None:
+                    t2i_controlnet_cond_scale = t2i_controlnet_conditioning_scale
+                    if isinstance(t2i_controlnet_cond_scale, list):
+                        t2i_controlnet_cond_scale = t2i_controlnet_cond_scale[0]
+                    t2i_cond_scale = t2i_controlnet_cond_scale * controlnet_keep[i]
 
-                # predict the noise residual
-                noise_pred = self.unet(
-                    latent_model_input,
-                    t,
-                    encoder_hidden_states=prompt_embeds,
-                    timestep_cond=timestep_cond,
-                    cross_attention_kwargs=self.cross_attention_kwargs,
-                    added_cond_kwargs=added_cond_kwargs,
-                    return_dict=False,
-                )[0]
+                    t2i_down_block_res_samples, t2i_mid_block_res_sample = self.controlnet2(
+                        control_model_input,
+                        t,
+                        encoder_hidden_states=controlnet_prompt_embeds,
+                        controlnet_cond=t2i_image,
+                        conditioning_scale=t2i_cond_scale,
+                        guess_mode=guess_mode,
+                        added_cond_kwargs=controlnet_added_cond_kwargs,
+                        return_dict=False,
+                    )
+                else:
+                    t2i_down_block_res_samples = None
+                    t2i_mid_block_res_sample = None
+
+
+                if t2i_image is None:
+                    noise_pred = self.unet(
+                        latent_model_input,
+                        t,
+                        encoder_hidden_states=prompt_embeds,
+                        timestep_cond=timestep_cond,
+                        cross_attention_kwargs=self.cross_attention_kwargs,
+                        added_cond_kwargs=added_cond_kwargs,
+                        return_dict=False,
+                    )[0]
+                else:
+                    noise_pred = self.unet(
+                        latent_model_input,
+                        t,
+                        encoder_hidden_states=prompt_embeds,
+                        timestep_cond=timestep_cond,
+                        cross_attention_kwargs=self.cross_attention_kwargs,
+                        down_block_additional_residuals=t2i_down_block_res_samples,
+                        mid_block_additional_residual=t2i_mid_block_res_sample,
+                        added_cond_kwargs=added_cond_kwargs,
+                        return_dict=False,
+                    )[0]
 
                 if i > 15 and stage == 2:
                     region_mask = self.get_region_mask(mask_list, noise_pred.shape[2], noise_pred.shape[3])
