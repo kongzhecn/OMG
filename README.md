@@ -7,12 +7,15 @@
 
 <sup>*</sup>Corresponding Authors
 
+**OMG + LORA**  : <a href='https://huggingface.co/spaces/Fucius/OMG'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue'></a>
+
+**OMG + InstantID**: <a href='https://huggingface.co/spaces/Fucius/OMG-InstantID'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue'></a>
+
 
 <a href='https://kongzhecn.github.io/omg-project/'><img src='https://img.shields.io/badge/Project-Page-green'></a>
 <a href='https://arxiv.org/abs/2403.10983'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
 [![GitHub](https://img.shields.io/github/stars/kongzhecn/OMG?style=social)](https://github.com/kongzhecn/OMG)
 
-<a href='https://huggingface.co/spaces/xxx'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue'></a>
 
 </div>
 
@@ -32,8 +35,11 @@
 
 
 ## :label: Change Log 
-- [2023/3/19] 🔥 We release the [technical report](https://arxiv.org/abs/2403.10983).
+- [2023/3/22] 🔥 We release the Hugging space for [OMG + InstantID](https://huggingface.co/spaces/Fucius/OMG-InstantID). Support ID personalization with a single image. 
+- [2023/3/19] 🔥 We release the [technical report](https://arxiv.org/abs/2403.10983) and Hugging space for [OMG-LoRAs](https://huggingface.co/spaces/Fucius/OMG)
 - [2023/3/18] 🔥 We release the source code and gradio demo of OMG.
+
+
 
 ## 🔆 Introduction
 ### 1. OMG + LoRA (ID with multiple images)
