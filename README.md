@@ -1,5 +1,5 @@
 <div align="center">
-<h1>OMG: Occlusion-friendly Personalized Multi-concept Generation In Diffusion Models</h1>
+<h1>OMG: Occlusion-friendly Personalized Multi-concept Generation In Diffusion Models (ECCV 2024)</h1>
 
 [Zhe Kong](https://scholar.google.com/citations?user=4X3yLwsAAAAJ&hl=zh-CN) · [Yong Zhang*](https://yzhang2016.github.io/) · [Tianyu Yang](https://tianyu-yang.com/) · [Tao Wang](https://taowangzj.github.io/)· [Kaihao Zhang](https://zhangkaihao.github.io/)
 
